@@ -16,7 +16,7 @@ public class Parse {
             return result;
         }
         else {
-            return str;
+            return numbers(str.substring(0, str.indexOf(" "))) + " percent";
         }
     }
 
@@ -38,7 +38,7 @@ public class Parse {
             for (int i=0; i<parts.length; i++){
                 str1+=parts[i];
             }
-            str=str1;
+            return str1;
 
         }
         return str;
