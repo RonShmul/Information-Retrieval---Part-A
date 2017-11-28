@@ -3,7 +3,7 @@
  */
 public class Parse {
 
-    public String numbers(String str){
+    public static String numbers(String str){
         if(str.contains(".")) {
             String[] parts = str.split(".");
             String str1 = parts[1];
