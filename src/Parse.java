@@ -24,6 +24,7 @@ public class Parse {
                 str1+=parts[i];
             }
             str=str1;
+            
         }
         return str;
     }
