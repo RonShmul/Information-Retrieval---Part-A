@@ -1,3 +1,5 @@
+import java.util.regex.Pattern;
+
 /**
  * Created by Ronshmul on 28/11/2017.
  */
@@ -18,17 +20,20 @@ public class Parse {
         }
     }
 
-    public String numbers(String str){
+    public static String numbers(String str){
         if(str.contains(".")) {
-            String[] parts = str.split(".");
+            String[] parts = str.split(Pattern.quote("."));
+            String str0 = parts[0];
             String str1 = parts[1];
             if (str1.length() > 2) {
-                int digit = Integer.parseInt(str1.substring(1,1))+1;
-                str = parts[0]+ "." + digit;
+                int digit = (Integer.parseInt(str1.substring(1,2)))+1;
+                str = str0+ "." +Integer.parseInt(str1.substring(0,1)) + digit;
             }
+            else
+                str = str0+ "." + str1;
         }
         if(str.contains(",")){
-            String[] parts = str.split(",");
+            String[] parts = str.split(Pattern.quote("//,"));
             String str1= "";
             for (int i=0; i<parts.length; i++){
                 str1+=parts[i];
