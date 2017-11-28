@@ -33,11 +33,13 @@ public class Parse {
                 str = str0+ "." + str1;
         }
         if(str.contains(",")){
-            String[] parts = str.split(Pattern.quote("//,"));
+            String[] parts = str.split(Pattern.quote(","));
             String str1= "";
             for (int i=0; i<parts.length; i++){
                 str1+=parts[i];
             }
+            str=str1;
+
         }
         return str;
     }
