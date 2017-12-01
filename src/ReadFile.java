@@ -60,6 +60,8 @@ public class ReadFile {
             StringBuilder builder = new StringBuilder();
             while ((s = bufferedReader.readLine()) != null) {
                 builder.append(s);
+                if(builder.toString().contains("</DOCNO>"))
+                    break;
             }
 
             Pattern docnoPattern = Pattern.compile("(?<=<DOCNO>)(.*?)(?=</DOCNO>)");
