@@ -1,3 +1,5 @@
+import com.sun.org.apache.xerces.internal.impl.dv.xs.StringDV;
+
 import java.io.*;
 import java.nio.file.Path;
 import java.util.Scanner;
@@ -33,8 +35,8 @@ public class ReadFile {
         //System.out.println(line);
 
         scanner.useDelimiter(Pattern.compile(delimiterEnd));
-        line = scanner.next().replace(delimiterStart, "").replaceAll("\\s+", "");
-        //System.out.println(line);
+        line = scanner.next().replace(delimiterStart, "");
+        System.out.println(line);
 
         return line;
     }
@@ -49,16 +51,13 @@ public class ReadFile {
            File currFile = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
 
             // scanning lines in currFile and create information about the currDoc
-
             Document currDoc = new Document();
             Scanner scanner = new Scanner(currFile);
 
             //insert doc number to the currDoc
             currDoc.setDocNo(cutParts(scanner , "<DOCNO>" , "</DOCNO>"));
 
-            //insert 
-
-                //currDoc.setDocNo(line);
+            String content = cutParts(scanner , "<TEXT>" , "</TEXT>");
 
 
 
