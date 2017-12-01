@@ -26,36 +26,43 @@ public class ReadFile {
         listOfDirs = headDir.listFiles();
     }
 
+    public String cutParts(Scanner scanner , String delimiterStart , String delimiterEnd){
+
+        scanner.useDelimiter(Pattern.compile(delimiterStart));
+        String line = scanner.next();
+        //System.out.println(line);
+
+        scanner.useDelimiter(Pattern.compile(delimiterEnd));
+        line = scanner.next().replace(delimiterStart, "").replaceAll("\\s+", "");
+        //System.out.println(line);
+
+        return line;
+    }
+
     public void  readDocs() throws IOException {  // reads documents from each file in the list of directories
 
-        //for(int i=0; i<listOfDirs.length; i++){
-            //get to the wanted file
-           /* File temp = listOfDirs[i];
-            File []currDir = temp.listFiles();
-            File currFile = currDir[0];*/
-           File file = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
+//        for (int i = 0; i < listOfDirs.length; i++) {
+//            //get to the wanted file
+//            File temp = listOfDirs[i];
+//            File[] currDir = temp.listFiles();
+//            File currFile = currDir[0];
+           File currFile = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
 
-            //
-            //Document currDoc= new Document();
-           /* try {
-                Scanner scan = new Scanner(currFile);
-                scan.useDelimiter(Pattern.compile("<DOCNO>"));
-                String line = scan.next();
-                System.out.println(line);
+            // scanning lines in currFile and create information about the currDoc
 
-                scan.useDelimiter(Pattern.compile("</DOCNO>"));
-                line = scan.next();
+            Document currDoc = new Document();
+            Scanner scanner = new Scanner(currFile);
+
+            //insert doc number to the currDoc
+            currDoc.setDocNo(cutParts(scanner , "<DOCNO>" , "</DOCNO>"));
+
+            //insert 
+
                 //currDoc.setDocNo(line);
-                System.out.println(line);
 
-                BufferedReader reader = new BufferedReader(new FileReader(currFile));
-                String line;
 
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }*/
 
-            BufferedReader bufferedReader = new BufferedReader( new FileReader(file));
+           /* BufferedReader bufferedReader = new BufferedReader( new FileReader(file));
             String s;
             StringBuilder builder = new StringBuilder();
             while ((s = bufferedReader.readLine()) != null) {
@@ -69,9 +76,10 @@ public class ReadFile {
             if(docnoMatcher.find()) {
                 String docno = docnoMatcher.group().replaceAll("\\s+", "");
                 System.out.println(docno);
-            }
+            }*/
 
         }
+//    }
 
    // }
 
