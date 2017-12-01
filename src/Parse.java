@@ -47,6 +47,28 @@ public class Parse {
         return str;
     }
 
+    public static String dates(String str){
+        if(str.contains("/")){
+            String []parts = str.split(Pattern.quote("/"));
+            if(parts.length>2){
+                String year = parts[2];
+                if(year.length()==4){
+                    return str;
+                }
+                if(year.length()==2){
+                    str = parts[0]+"/"+parts[1]+"/"+19+parts[2];
+                    return str;
+                }
+
+            }
+            else{
+
+            }
+        }
+
+        return str;
+    }
+
     public String upperCaseWord(String str) {
         return str.toLowerCase();
     }
