@@ -1,14 +1,15 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.Scanner;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Created by Ronshmul on 30/11/2017.
  */
+
+
 public class ReadFile {
     private static String pathStr;
     private String currentDoc;
@@ -25,17 +26,18 @@ public class ReadFile {
         listOfDirs = headDir.listFiles();
     }
 
-    public void  readDocs(){  // reads documents from each file in the list of directories
+    public void  readDocs() throws IOException {  // reads documents from each file in the list of directories
 
-        for(int i=0; i<listOfDirs.length; i++){
+        //for(int i=0; i<listOfDirs.length; i++){
             //get to the wanted file
-            File temp = listOfDirs[i];
+           /* File temp = listOfDirs[i];
             File []currDir = temp.listFiles();
-            File currFile = currDir[0];
+            File currFile = currDir[0];*/
+           File file = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
 
             //
-            Document currDoc= new Document();
-            try {
+            //Document currDoc= new Document();
+           /* try {
                 Scanner scan = new Scanner(currFile);
                 scan.useDelimiter(Pattern.compile("<DOCNO>"));
                 String line = scan.next();
@@ -43,19 +45,33 @@ public class ReadFile {
 
                 scan.useDelimiter(Pattern.compile("</DOCNO>"));
                 line = scan.next();
-                currDoc.setDocNo(line);
+                //currDoc.setDocNo(line);
                 System.out.println(line);
 
-               /* BufferedReader reader = new BufferedReader(new FileReader(currFile));
-                String line; */
+                BufferedReader reader = new BufferedReader(new FileReader(currFile));
+                String line;
 
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
+            }*/
+
+            BufferedReader bufferedReader = new BufferedReader( new FileReader(file));
+            String s;
+            StringBuilder builder = new StringBuilder();
+            while ((s = bufferedReader.readLine()) != null) {
+                builder.append(s);
+            }
+
+            Pattern docnoPattern = Pattern.compile("(?<=<DOCNO>)(.*?)(?=</DOCNO>)");
+            Matcher docnoMatcher = docnoPattern.matcher(builder.toString());
+            if(docnoMatcher.find()) {
+                String docno = docnoMatcher.group().replaceAll("\\s+", "");
+                System.out.println(docno);
             }
 
         }
 
-    }
+   // }
 
     public void readFile(){
         //listOfFiles[0].getAbsolutePath()
