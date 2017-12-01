@@ -1,9 +1,12 @@
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
  * Created by Ronshmul on 28/11/2017.
  */
 public class Parse {
+
     public String percent(String str) {
         if(str.contains("percentage")) {
             int index = str.indexOf("percentage");
@@ -44,4 +47,16 @@ public class Parse {
         return str;
     }
 
+    public String upperCaseWord(String str) {
+        return str.toLowerCase();
+    }
+
+    public String[] upperCaseWords(String str) {
+        String s = str.toLowerCase();
+        String[] result = s.split(Pattern.quote(" "));
+        result = Arrays.copyOf(result, result.length + 1);
+        result[result.length - 1] = s;
+        return result;
+    }
 }
+
