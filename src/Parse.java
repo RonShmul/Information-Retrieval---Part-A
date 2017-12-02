@@ -7,6 +7,14 @@ import java.util.regex.Pattern;
  */
 public class Parse {
 
+    private Document document;
+    private String content;
+
+    public Parse(Document document, String content) {
+        this.document = document;
+        this.content = content;
+    }
+
     public String percent(String str) {
         if(str.contains("percentage")) {
             int index = str.indexOf("percentage");
