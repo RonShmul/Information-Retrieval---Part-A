@@ -12,6 +12,11 @@ public class Parse {
     private String content;
     private static Dictionary<String , String> months;
 
+    /**
+     * constructor
+     * @param document
+     * @param content
+     */
     public Parse(Document document, String content) {
         this.document = document;
         this.content = content;
@@ -43,6 +48,12 @@ public class Parse {
         months.put("december" , "12");
     }
 
+    /**
+     * function to parse number with percent to be in the format: number percent.
+     * call to the function: number to fix the decimal number.
+     * @param str
+     * @return String
+     */
     public String percent(String str) {
         if(str.contains("percentage")) {
             int index = str.indexOf("percentage");
@@ -59,6 +70,11 @@ public class Parse {
         }
     }
 
+    /**
+     * handle numbers: decimal numbers to be 2 digits after the point and remove comma.
+     * @param str
+     * @return String
+     */
     public static String numbers(String str){
         if(str.contains(".")) {
             String[] parts = str.split(Pattern.quote("."));
@@ -126,10 +142,20 @@ public class Parse {
         return str;
     }
 
+    /**
+     * change uppercase characters to lowercase.
+     * @param str
+     * @return
+     */
     public String upperCaseWord(String str) {
         return str.toLowerCase();
     }
 
+    /**
+     * expressions like Word Word (capital letter at the beginning) will be split to: word, words and word word.
+     * @param str
+     * @return String[]
+     */
     public String[] upperCaseWords(String str) {
         String s = str.toLowerCase();
         String[] result = s.split(Pattern.quote(" "));
@@ -137,5 +163,46 @@ public class Parse {
         result[result.length - 1] = s;
         return result;
     }
+
+    /**
+     * expressions like word-word will be split to: word, words and word word.
+     * @param str
+     * @return String[]
+     */
+    public String[] wordsWithHyphen(String str) {
+        String s = str.toLowerCase();
+        String[] result = s.split(Pattern.quote("-"));
+        s.replaceAll("-", " ");
+        result = Arrays.copyOf(result, result.length + 1);
+        result[result.length - 1] = s;
+        return result;
+    }
+
+    /**
+     *
+     * @param str
+     * @return String
+     */
+    String removeS(String str) {
+        return str.substring(0,str.length() - 2);
+    }
+
+    /**
+     * number$ will turn to: number dollar
+     * @param str
+     * @return String
+     */
+    public String dollar(String str) {
+
+        if(str.contains("$")) {
+            int index = str.indexOf("$");
+            String result = numbers(str.substring(0, index - 1)) + " dollar";
+            return result;
+        }
+        else {
+            return numbers(str.substring(0, str.indexOf(" "))) + " dollar";
+        }
+    }
+
 }
 
