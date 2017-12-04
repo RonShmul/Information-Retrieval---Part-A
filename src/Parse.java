@@ -1,6 +1,9 @@
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.Scanner;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -11,6 +14,7 @@ public class Parse {
     private Document document;
     private String content;
     private static Dictionary<String , String> months;
+    private static HashMap terms;
 
     /**
      * constructor
@@ -20,9 +24,11 @@ public class Parse {
     public Parse(Document document, String content) {
         this.document = document;
         this.content = content;
+
+        terms = new HashMap();
     }
 
-    public void setDictionary(){
+    public void setMonthDictionary(){
         months.put("jan" , "1");
         months.put("january" , "1");
         months.put("feb" , "2");
@@ -201,6 +207,41 @@ public class Parse {
         }
         else {
             return numbers(str.substring(0, str.indexOf(" "))) + " dollar";
+        }
+    }
+
+    /**
+     * turn a.b.c to abc.
+     * @param str
+     * @return String
+     */
+    String dotsBetweenWords(String str) {
+        return str.replaceAll(".", "");
+    }
+
+    void parse() {
+        Scanner doc = new Scanner(content);
+        doc.useDelimiter(" ");
+
+        Pattern dotsP = Pattern.compile("(\\w\\.)+\\w|");
+        Pattern wordP = Pattern.compile("\\w+");
+        Pattern numberP = Pattern.compile("\\d+");
+        Pattern upperCaseP = Pattern.compile("[A-Z]\\w*");
+
+        while(doc.hasNext()) {
+            String potentialTerm = doc.next().replaceAll("[\\[\\](){}]","").replaceAll("\"","");
+            Matcher dotsM = dotsP.matcher(potentialTerm);
+            Matcher wordM = wordP.matcher(potentialTerm);
+            Matcher numperM = numberP.matcher(potentialTerm);
+            Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
+
+
+            
+
+
+
+
+
         }
     }
 
