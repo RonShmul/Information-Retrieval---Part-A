@@ -1,8 +1,5 @@
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,6 +11,7 @@ public class Parse {
     private Document document;
     private String content;
     private static Dictionary<String , String> months;
+    private static List<String> listMonth;
     private static HashMap terms;
 
     /**
@@ -26,6 +24,10 @@ public class Parse {
         this.content = content;
 
         terms = new HashMap();
+    }
+
+    public static void setArrayMonths() {
+
     }
 
     public void setMonthDictionary(){
@@ -215,33 +217,57 @@ public class Parse {
      * @param str
      * @return String
      */
-    String dotsBetweenWords(String str) {
+    public String dotsBetweenWords(String str) {
         return str.replaceAll(".", "");
     }
 
-    void parse() {
+    public void parse() {
         Scanner doc = new Scanner(content);
         doc.useDelimiter(" ");
+        while(doc.hasNext()) {
+            String potentialTerm = doc.next().replaceAll("[\\[\\](){}]|\"|:|;","");
+            parseTerm(doc, potentialTerm);
+        }
+    }
 
+    void parseTerm(Scanner doc, String potentialTerm) {
         Pattern dotsP = Pattern.compile("(\\w\\.)+\\w|");
         Pattern wordP = Pattern.compile("\\w+");
         Pattern numberP = Pattern.compile("\\d+");
         Pattern upperCaseP = Pattern.compile("[A-Z]\\w*");
+        Pattern belongsP = Pattern.compile("\\w+\\'s");
+        Pattern hypherP = Pattern.compile("(\\w+-)+\\w");
 
-        while(doc.hasNext()) {
-            String potentialTerm = doc.next().replaceAll("[\\[\\](){}]","").replaceAll("\"","");
-            Matcher dotsM = dotsP.matcher(potentialTerm);
-            Matcher wordM = wordP.matcher(potentialTerm);
-            Matcher numperM = numberP.matcher(potentialTerm);
-            Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
+        Matcher dotsM = dotsP.matcher(potentialTerm);
+        Matcher wordM = wordP.matcher(potentialTerm);
+        Matcher numperM = numberP.matcher(potentialTerm);
+        Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
+        Matcher belongsM = belongsP.matcher(potentialTerm);
 
+        if(wordM.find()) {  //if the term is a word
+            if(upperCaseM.find()) {
+                if(months.get(potentialTerm) != null){
+                    parseTerm(doc , doc.next());
 
-            
+                }
+                String nextTerm = doc.next();
+                Matcher isNum = numberP.matcher(nextTerm);
+                if(isNum.find()){
 
+                }
+                else {
+                    parseTerm(doc, nextTerm);
+                }
+            }
+            else if(upperCaseM.find()) {
 
+                    String nextTerm = doc.next();
+                    Matcher isUpper = upperCaseP.matcher(nextTerm);
 
+                while (isUpper.find()) {
 
-
+                }
+            }
         }
     }
 

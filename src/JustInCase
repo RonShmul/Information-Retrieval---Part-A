@@ -1,0 +1,77 @@
+import com.sun.org.apache.xerces.internal.impl.dv.xs.StringDV;
+
+import java.io.*;
+import java.nio.file.Path;
+import java.util.Scanner;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Created by Ronshmul on 30/11/2017.
+ */
+
+
+public class ReadFile {
+
+
+
+    public void readDoc() throws IOException {  // reads documents from each file in the list of directories
+
+        //File currFile = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
+
+        // scanning lines in currFile and create information about the currDoc
+
+        BufferedReader bufferedReader = new BufferedReader(new FileReader(currFile));
+
+        while(bufferedReader.ready()) {
+            //the garbage at the end make the "bufferedReader.ready()" return true and the DOCNO and content are null.. should be handled
+            Document document = new Document();
+            document.setDocNo(cutParts(bufferedReader, "<DOCNO>", "</DOCNO>"));
+            document.setPositionInFile(((Integer)positionTracker).toString());
+            System.out.println(document.getDocNo());
+            String content = cutParts(bufferedReader, "<TEXT>", "</TEXT>");
+            System.out.println(content);
+        }
+
+    }
+
+    String cutParts(BufferedReader bufferedReader, String startDelimiter, String endDelimiter) {
+        StringBuilder builder = new StringBuilder();
+        String s;
+        String text = null;
+        try {
+            while ((s = bufferedReader.readLine()) != null) {
+                positionTracker += s.getBytes().length;
+                builder.append(s);
+                if (builder.toString().contains(endDelimiter))
+                    break;
+            }
+
+            String regex = "(?<=" + startDelimiter + ")(.*?)(?=" + endDelimiter + ")";
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(builder.toString());
+            if (matcher.find()) {
+                 text = matcher.group();
+            }
+            } catch(IOException e){
+                e.printStackTrace();
+            }
+            return text;
+        }
+
+
+
+//    }
+
+   // }
+
+    public void readFile(){
+        //listOfFiles[0].getAbsolutePath()
+    }
+
+
+
+
+
+}
