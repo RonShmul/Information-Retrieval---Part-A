@@ -25,7 +25,8 @@ public class Document { // A class that helps us to save data on a specific docu
     }
 
     public void setDocNo(String docNo) {
-        this.docNo = docNo;
+        if(docNo!= null)
+            this.docNo = docNo.replaceAll("\\s+" , "");
     }
 
     public void setPositionInFile(String positionInFile) {

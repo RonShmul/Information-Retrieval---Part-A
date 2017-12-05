@@ -31,12 +31,15 @@ public class ReadFile {
     public String cutParts(Scanner scanner , String delimiterStart , String delimiterEnd){
 
         scanner.useDelimiter(Pattern.compile(delimiterStart));
-        String line = scanner.next();
-        //System.out.println(line);
-
-        scanner.useDelimiter(Pattern.compile(delimiterEnd));
-        line = scanner.next().replace(delimiterStart, "");
-        System.out.println(line);
+        String line = null;
+//      System.out.println(line);
+        if((scanner.next())!=null) {
+            if(scanner.hasNext()) {
+                scanner.useDelimiter(Pattern.compile(delimiterEnd));
+                line = scanner.next().replace(delimiterStart, "");
+            }
+//        System.out.println(line);
+        }
 
         return line;
     }
@@ -48,18 +51,24 @@ public class ReadFile {
 //            File temp = listOfDirs[i];
 //            File[] currDir = temp.listFiles();
 //            File currFile = currDir[0];
-           File currFile = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
-
-            // scanning lines in currFile and create information about the currDoc
-            Document currDoc = new Document();
+           File currFile = new File("C:\\Users\\Ronshmul\\IdeaProjects\\Information Retrieval - Part A\\src\\ahlaDoc");
             Scanner scanner = new Scanner(currFile);
 
-            //insert doc number to the currDoc
-            currDoc.setDocNo(cutParts(scanner , "<DOCNO>" , "</DOCNO>"));
+            while(scanner.hasNext()) {
+                // scanning lines in currFile and create information about the currDoc
+                Document currDoc = new Document();
 
-            String content = cutParts(scanner , "<TEXT>" , "</TEXT>");
-
-
+                //insert doc number to the currDoc
+                    currDoc.setDocNo(cutParts(scanner, "<DOCNO>", "</DOCNO>"));
+                    if(scanner.hasNext()) {
+                        System.out.println(currDoc.getDocNo());
+                        String content = cutParts(scanner, "<TEXT>", "</TEXT>");
+                        if (content != null) {
+                            System.out.println(content);
+                            Parse parser = new Parse(currDoc, content);
+                        }
+                    }
+            }
 
            /* BufferedReader bufferedReader = new BufferedReader( new FileReader(file));
             String s;
@@ -78,15 +87,9 @@ public class ReadFile {
             }*/
 
         }
-//    }
+ //   }
 
    // }
-
-    public void readFile(){
-        //listOfFiles[0].getAbsolutePath()
-    }
-
-
 
 
 

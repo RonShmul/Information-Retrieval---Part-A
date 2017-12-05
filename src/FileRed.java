@@ -1,6 +1,5 @@
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.CharBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +11,13 @@ public class FileRed {
     private static long positionTracker;
     private File headDir;
     private File[] listOfDirs;
+
+    public FileRed(String path){
+        pathStr = path;
+        headDir = new File(pathStr);
+        listOfDirs = headDir.listFiles();
+
+    }
 
     public void setPathStr(String path){
         pathStr = path;
@@ -39,17 +45,30 @@ public class FileRed {
 
         try {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(currentFile), 1000*8192);
+            //StringBuilder builder = new StringBuilder();
+           // while(bufferedReader.ready()) {
+                    String fileString ="";
+                    String temp;
+                    //the garbage at the end make the "bufferedReader.ready()" return true and the DOCNO and content are null.. should be handled
+                    while((temp=bufferedReader.readLine())!= null){
+                        fileString=fileString.concat(temp);
+                    }
 
 
-        while(bufferedReader.ready()) {
-                //the garbage at the end make the "bufferedReader.ready()" return true and the DOCNO and content are null.. should be handled
-                Document document = new Document();
-                document.setDocNo(cutParts(bufferedReader, "<DOCNO>", "</DOCNO>"));
-                document.setPositionInFile(((Long)positionTracker).toString());
-                System.out.println(document.getDocNo());
-                String content = cutParts(bufferedReader, "<TEXT>", "</TEXT>");
-                System.out.println(content);
-            }
+                    Pattern patternDocno = Pattern.compile("(?<=<DOCNO>)(.*?)(?=</DOCNO>)");
+                    Pattern patternText = Pattern.compile("(?<=<TEXT>)(.*?)(?=</TEXT>)");
+                    Matcher matchDocno = patternDocno.matcher(fileString);
+                    Matcher matchText = patternText.matcher(fileString);
+                    Document document = new Document();
+                    while(matchDocno.find() && matchText.find()) {
+                        System.out.println(matchDocno.group());
+                    }
+                    //document.setDocNo(cutParts(fileString, "<DOCNO>", "</DOCNO>"));
+                    //document.setPositionInFile(((Long)positionTracker).toString());
+                    //System.out.println(document.getDocNo());
+                    //String content = cutParts(fileString, "<TEXT>", "</TEXT>");
+                    //System.out.println(content);
+             //   }
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -59,27 +78,21 @@ public class FileRed {
 
     }
 
-        String cutParts(BufferedReader bufferedReader, String startDelimiter, String endDelimiter) {
-            StringBuilder builder = new StringBuilder();
+        String cutParts(String fileString, String startDelimiter, String endDelimiter) {
+//            StringBuilder builder = new StringBuilder();
             String s;
+            String builder = "";
             String text = null;
-            try {
-                while ((s = bufferedReader.readLine()) != null) {
-                    positionTracker += s.getBytes().length;
-                    builder.append(s);
-                    if (builder.toString().contains(endDelimiter))
-                        break;
-                }
+            String regex = "(?<=" + startDelimiter + ")(.*?)(?=" + endDelimiter + ")";
+            Pattern pattern = Pattern.compile(regex);
+               // while ((s = bufferedReader.readLine()) != null) {
+//                    positionTracker += s.getBytes().length;
+                    Matcher matcher = pattern.matcher(builder);
+                    if (matcher.find()) {
+                        return matcher.group();
+                    }
+               // }
 
-                String regex = "(?<=" + startDelimiter + ")(.*?)(?=" + endDelimiter + ")";
-                Pattern pattern = Pattern.compile(regex);
-                Matcher matcher = pattern.matcher(builder.toString());
-                if (matcher.find()) {
-                    text = matcher.group();
-                }
-            } catch(IOException e){
-                e.printStackTrace();
-            }
             return text;
         }
 

@@ -31,13 +31,12 @@ public class Main {
 //                    //.replaceAll("[\\[\\](){}]","").replaceAll("\"","");
 //            System.out.println(s);
 //        }
-//        else
+//        else4
 //            System.out.println("basa");
 
 
-        FileRed fileRed = new FileRed();
-        fileRed.setPathStr("D:\\Sivan\\studies\\corpus");
-        fileRed.setListOfDirs();
+        FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
+
         fileRed.readCorpus();
     }
 
