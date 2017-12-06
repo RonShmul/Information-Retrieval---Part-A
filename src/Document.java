@@ -5,7 +5,7 @@ public class Document { // A class that helps us to save data on a specific docu
 
     private String path;
     private String docNo;
-    private String positionInFile; //the first bit of the document - where it starts
+    private long positionInFile; //the first bit of the document - where it starts
 
 
     public String getPath() {
@@ -16,7 +16,7 @@ public class Document { // A class that helps us to save data on a specific docu
         return docNo;
     }
 
-    public String getPositionInFile() {
+    public long getPositionInFile() {
         return positionInFile;
     }
 
@@ -29,7 +29,7 @@ public class Document { // A class that helps us to save data on a specific docu
             this.docNo = docNo.replaceAll("\\s+" , "");
     }
 
-    public void setPositionInFile(String positionInFile) {
+    public void setPositionInFile(long positionInFile) {
         this.positionInFile = positionInFile;
     }
 }

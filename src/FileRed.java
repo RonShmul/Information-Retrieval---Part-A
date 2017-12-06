@@ -11,12 +11,15 @@ public class FileRed {
     private static long positionTracker;
     private File headDir;
     private File[] listOfDirs;
+    private Pattern patternDocNo;
+    private Pattern patternText;
 
     public FileRed(String path){
         pathStr = path;
         headDir = new File(pathStr);
         listOfDirs = headDir.listFiles();
-
+        patternDocNo = Pattern.compile("(?<=<DOCNO>)(.*?)(?=</DOCNO>)");
+        patternText = Pattern.compile("(?<=<TEXT>)(.*?)(?=</TEXT>)");
     }
 
     public void setPathStr(String path){
@@ -29,68 +32,98 @@ public class FileRed {
         listOfDirs = headDir.listFiles();
     }
 
+
     public void readCorpus() {
         for (int i = 0; i < listOfDirs.length; i++) {
             //get to the wanted file
             File temp = listOfDirs[i];
             File[] currDir = temp.listFiles();
             File currFile = currDir[0];
-            readDoc(currFile);
+            readFile(currFile);
         }
     }
 
-    public void readDoc(File currentFile) {
+    public void readFile(File currentFile) {
 
-            //File currFile = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
-
+        //File currFile = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
+        BufferedReader bufferedReader = null;
         try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(currentFile), 1000*8192);
-            //StringBuilder builder = new StringBuilder();
-           // while(bufferedReader.ready()) {
-                    String fileString ="";
-                    String temp;
-                    //the garbage at the end make the "bufferedReader.ready()" return true and the DOCNO and content are null.. should be handled
-                    while((temp=bufferedReader.readLine())!= null){
-                        fileString=fileString.concat(temp);
-                    }
+            bufferedReader = new BufferedReader(new FileReader(currentFile));
+            String path = currentFile.getAbsolutePath();
+
+        StringBuilder fileString = new StringBuilder();
+
+            //while (bufferedReader.ready()) {
+            //StringBuilder fileString = new StringBuilder();
+            String temp;
+            boolean isPositionDefined = false;
+            positionTracker = 0;
+            long position = 0;
+            //the garbage at the end make the "bufferedReader.ready()" return true and the DOCNO and content are null.. should be handled
+            while ((temp = bufferedReader.readLine()) != null) {
+                positionTracker += temp.getBytes().length;
+                if(!isPositionDefined) {
+                    position = positionTracker;
+                    isPositionDefined = true;
+                }
+                fileString.append(temp);
+                fileString.append(" ");
+                temp.length();
+                if (temp.length() <= 7 && temp.contains("</TEXT>")) {
+                    readDoc(fileString.toString(), position, path);
+                    fileString = new StringBuilder();
+                    isPositionDefined = false;
+                }
+            }
+            bufferedReader.close();
+            } catch (IOException e1) {
+            e1.printStackTrace();
+        }
+
+    }
+    public void readDoc(String documentText,long position, String path) {
+        Matcher matchDocNo = patternDocNo.matcher(documentText);
+        Matcher matchText = patternText.matcher(documentText);
+        Document document = new Document();
+        document.setPath(path);
+        document.setPositionInFile(position);
+        if(matchDocNo.find()) {
+            document.setDocNo(matchDocNo.group());
+            System.out.println(document.getDocNo());
+        }
+        if(matchText.find()) {
+            Parse parse = new Parse(document, matchText.group());
+            //parse.parse();
+        }
+    }
 
 
-                    Pattern patternDocno = Pattern.compile("(?<=<DOCNO>)(.*?)(?=</DOCNO>)");
-                    Pattern patternText = Pattern.compile("(?<=<TEXT>)(.*?)(?=</TEXT>)");
-                    Matcher matchDocno = patternDocno.matcher(fileString);
-                    Matcher matchText = patternText.matcher(fileString);
-                    Document document = new Document();
-                    while(matchDocno.find() && matchText.find()) {
-                        System.out.println(matchDocno.group());
-                    }
-                    //document.setDocNo(cutParts(fileString, "<DOCNO>", "</DOCNO>"));
+    // Document document = new Document();
+
+
+
+
+
+    //document.setDocNo(cutParts(fileString, "<DOCNO>", "</DOCNO>"));
                     //document.setPositionInFile(((Long)positionTracker).toString());
                     //System.out.println(document.getDocNo());
                     //String content = cutParts(fileString, "<TEXT>", "</TEXT>");
                     //System.out.println(content);
              //   }
 
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-    }
 
-        String cutParts(String fileString, String startDelimiter, String endDelimiter) {
-//            StringBuilder builder = new StringBuilder();
-            String s;
-            String builder = "";
+        String cutParts(String fileString, Matcher docM, Matcher textM) {
+
             String text = null;
-            String regex = "(?<=" + startDelimiter + ")(.*?)(?=" + endDelimiter + ")";
-            Pattern pattern = Pattern.compile(regex);
+
                // while ((s = bufferedReader.readLine()) != null) {
 //                    positionTracker += s.getBytes().length;
-                    Matcher matcher = pattern.matcher(builder);
-                    if (matcher.find()) {
-                        return matcher.group();
-                    }
+
+
+//                    if (matcher.find()) {
+//                        return matcher.group();
+//                    }
                // }
 
             return text;

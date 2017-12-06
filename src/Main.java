@@ -35,7 +35,8 @@ public class Main {
 //            System.out.println("basa");
 
 
-        FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
+        //FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
+        FileRed fileRed = new FileRed("corpus");
 
         fileRed.readCorpus();
     }
