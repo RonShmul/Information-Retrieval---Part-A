@@ -10,9 +10,10 @@ public class Parse {
 
     private Document document;
     private String content;
-    private static Dictionary<String , String> months;
+    private static Map<String , String> months;
     private static List<String> listMonth;
     private static HashMap terms;
+    private Stack<String> stackOfTempTerms;
 
     /**
      * constructor
@@ -22,6 +23,9 @@ public class Parse {
     public Parse(Document document, String content) {
         this.document = document;
         this.content = content;
+        stackOfTempTerms = new Stack<>();
+        months = new HashMap<String, String>();
+        setMonthMap();
 
         terms = new HashMap();
     }
@@ -30,7 +34,7 @@ public class Parse {
 
     }
 
-    public void setMonthDictionary(){
+    public void setMonthMap(){
         months.put("jan" , "1");
         months.put("january" , "1");
         months.put("feb" , "2");
@@ -222,15 +226,14 @@ public class Parse {
     }
 
     public void parse() {
-        Scanner doc = new Scanner(content);
-        doc.useDelimiter(" ");
-        while(doc.hasNext()) {
-            String potentialTerm = doc.next().replaceAll("[\\[\\](){}]|\"|:|;","");
+        StringTokenizer doc = new StringTokenizer(content);
+        while(doc.hasMoreTokens()) {
+            String potentialTerm = doc.nextToken().replaceAll("[\\[\\](){}]|\"|:|;","");
             parseTerm(doc, potentialTerm);
         }
     }
 
-    void parseTerm(Scanner doc, String potentialTerm) {
+    void parseTerm(StringTokenizer doc, String potentialTerm) {
         Pattern dotsP = Pattern.compile("(\\w\\.)+\\w|");
         Pattern wordP = Pattern.compile("\\w+");
         Pattern numberP = Pattern.compile("\\d+");
@@ -247,10 +250,9 @@ public class Parse {
         if(wordM.find()) {  //if the term is a word
             if(upperCaseM.find()) {
                 if(months.get(potentialTerm) != null){
-                    parseTerm(doc , doc.next());
-
+                    parseTerm(doc , doc.nextToken());
                 }
-                String nextTerm = doc.next();
+                String nextTerm = doc.nextToken();
                 Matcher isNum = numberP.matcher(nextTerm);
                 if(isNum.find()){
 
@@ -261,7 +263,7 @@ public class Parse {
             }
             else if(upperCaseM.find()) {
 
-                    String nextTerm = doc.next();
+                    String nextTerm = doc.nextToken();
                     Matcher isUpper = upperCaseP.matcher(nextTerm);
 
                 while (isUpper.find()) {
