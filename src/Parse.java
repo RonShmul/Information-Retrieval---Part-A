@@ -1,4 +1,3 @@
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -9,8 +8,8 @@ import java.util.regex.Pattern;
 public class Parse {
 
     private static Map<String, String> months;
-    private static List<String> listMonth;
     private static HashMap terms;
+    private static HashSet<String> stopWords;
     private Document document;
     private String content;
     private Stack<String> stackOfTempTerms;
@@ -21,7 +20,7 @@ public class Parse {
     private Pattern belongsP;
     private Pattern hyphenWordsP;
     private Pattern hyphenNumbersP;
-    private static HashSet<String> stopWords;
+    private Pattern textTags;
 
     /**
      * constructor
@@ -32,20 +31,92 @@ public class Parse {
     public Parse(Document document, String content) {
         this.document = document;
         this.content = content;
+        stopWords = new HashSet<>();
         stackOfTempTerms = new Stack<>();
         months = new HashMap<String, String>();
-        dotsP = Pattern.compile("(\\w\\.)+\\w|");
-        wordP = Pattern.compile("\\w+");
-        numberP = Pattern.compile("\\d+(.\\d+)*|\\d+(,\\d+)+(.\\d+)*");
+        dotsP = Pattern.compile("(\\w\\.)+\\w");
+        wordP = Pattern.compile("\\w+(,|)");
+        numberP = Pattern.compile("\\d+(,\\d+)*(.\\d+)*(th|)");
         upperCaseP = Pattern.compile("[A-Z][a-z]+|[A-Z]+");
         belongsP = Pattern.compile("\\w+\\'s");
         hyphenWordsP = Pattern.compile("\\w+(-\\w+)+");
         hyphenNumbersP = Pattern.compile("\\d+(-\\d+)+");
+        textTags = Pattern.compile("<(.*?)>");
 
         setMonthMap();
         setStopWords();
 
         terms = new HashMap();
+    }
+
+    /**
+     * handle numbers: decimal numbers to be 2 digits after the point and remove comma.
+     *
+     * @param str
+     * @return String
+     */
+    public static String numbers(String str) {
+        if (str.contains(".")) {
+            String[] parts = str.split(Pattern.quote("."));
+            String str0 = parts[0];
+            String str1 = parts[1];
+            if (str1.length() > 2) {
+                int digit = (Integer.parseInt(str1.substring(1, 2))) + 1;
+                str = str0 + "." + Integer.parseInt(str1.substring(0, 1)) + digit;
+            } else
+                str = str0 + "." + str1;
+        }
+        if (str.contains(",")) {
+            String[] parts = str.split(Pattern.quote(","));
+            String str1 = "";
+            for (int i = 0; i < parts.length; i++) {
+                str1 += parts[i];
+            }
+            return str1;
+        }
+        return str;
+    }
+
+    public static String dates(String str) {
+        str = str.toLowerCase();
+        if (str.contains("th")) {
+            str = str.replace("th", "");
+        }
+        if (str.contains(",")) {
+            str = str.replace(",", "");
+        }
+
+        String[] parts = str.split(" ");
+
+        if (parts.length > 2) {
+            if (parts[2].length() == 2) {
+                String s = "19" + parts[2];
+                parts[2] = s;
+            }
+
+            if (months.get(parts[0]) != null) {
+                parts[0] = months.get(parts[0]);
+                str = parts[1] + "/" + parts[0] + "/" + parts[2];
+            }
+            if (months.get(parts[1]) != null) {
+                parts[1] = months.get(parts[1]);
+                str = parts[0] + "/" + parts[1] + "/" + parts[2];
+            }
+        } else {
+            if (months.get(parts[0]) != null) {
+                if (parts[1].length() == 4) {
+                    str = parts[0] + "/" + parts[1];
+                } else {
+                    parts[0] = months.get(parts[0]);
+                    str = parts[1] + "/" + parts[0];
+                }
+            }
+            if (months.get(parts[1]) != null) {
+                parts[1] = months.get(parts[1]);
+                str = parts[0] + "/" + parts[1];
+            }
+        }
+        return str;
     }
 
     private void setStopWords() {
@@ -623,77 +694,6 @@ public class Parse {
 
     }
 
-
-    /**
-     * handle numbers: decimal numbers to be 2 digits after the point and remove comma.
-     *
-     * @param str
-     * @return String
-     */
-    public static String numbers(String str) {
-        if (str.contains(".")) {
-            String[] parts = str.split(Pattern.quote("."));
-            String str0 = parts[0];
-            String str1 = parts[1];
-            if (str1.length() > 2) {
-                int digit = (Integer.parseInt(str1.substring(1, 2))) + 1;
-                str = str0 + "." + Integer.parseInt(str1.substring(0, 1)) + digit;
-            } else
-                str = str0 + "." + str1;
-        }
-        if (str.contains(",")) {
-            String[] parts = str.split(Pattern.quote(","));
-            String str1 = "";
-            for (int i = 0; i < parts.length; i++) {
-                str1 += parts[i];
-            }
-            return str1;
-        }
-        return str;
-    }
-
-    public static String dates(String str) {
-        str = str.toLowerCase();
-        if (str.contains("th")) {
-            str = str.replace("th", "");
-        }
-        if (str.contains(",")) {
-            str = str.replace(",", "");
-        }
-
-        String[] parts = str.split(" ");
-
-        if (parts.length > 2) {
-            if (parts[2].length() == 2) {
-                String s = "19" + parts[2];
-                parts[2] = s;
-            }
-
-            if (months.get(parts[0]) != null) {
-                parts[0] = months.get(parts[0]);
-                str = parts[1] + "/" + parts[0] + "/" + parts[2];
-            }
-            if (months.get(parts[1]) != null) {
-                parts[1] = months.get(parts[1]);
-                str = parts[0] + "/" + parts[1] + "/" + parts[2];
-            }
-        } else {
-            if (months.get(parts[0]) != null) {
-                if (parts[1].length() == 4) {
-                    str = parts[0] + "/" + parts[1];
-                } else {
-                    parts[0] = months.get(parts[0]);
-                    str = parts[1] + "/" + parts[0];
-                }
-            }
-            if (months.get(parts[1]) != null) {
-                parts[1] = months.get(parts[1]);
-                str = parts[0] + "/" + parts[1];
-            }
-        }
-        return str;
-    }
-
     public void setMonthMap() {
         months.put("jan", "1");
         months.put("january", "1");
@@ -741,15 +741,6 @@ public class Parse {
         }
     }
 
-    /**
-     * change uppercase characters to lowercase.
-     *
-     * @param str
-     * @return
-     */
-    public String upperCaseWord(String str) {
-        return str.toLowerCase();
-    }
 
     /**
      * expressions like Word Word (capital letter at the beginning) will be split to: word, words and word word.
@@ -757,11 +748,15 @@ public class Parse {
      * @param str
      * @return String[]
      */
-    public String[] upperCaseWords(String str) {
+    public String[] upperCaseWords(String str) {  //todo remove stop words from expressions
         String s = str.toLowerCase();
         String[] result = s.split(Pattern.quote(" "));
-        result = Arrays.copyOf(result, result.length + 1);
-        result[result.length - 1] = s;
+        if (stopWords.contains(result[result.length - 1])) {
+            result[result.length - 1] = s.replaceAll(result[result.length - 1], "");
+        } else {
+            result = Arrays.copyOf(result, result.length + 1);
+            result[result.length - 1] = s;
+        }
         return result;
     }
 
@@ -772,9 +767,15 @@ public class Parse {
      * @return String[]
      */
     public String[] wordsWithHyphen(String str) {
-        String s = str.toLowerCase();
-        String[] result = s.split(Pattern.quote("-"));
-        s.replaceAll("-", " ");
+        String s = "";
+        String[] result = str.split(Pattern.quote("-"));
+        for (int i = 0; i < result.length; i++) {
+            result[i] = cleanTerm(result[i]);
+            result[i].toLowerCase();
+            s = s + result[i];
+            if (i != result.length - 1)
+                s = s + " ";
+        }
         result = Arrays.copyOf(result, result.length + 1);
         result[result.length - 1] = s;
         return result;
@@ -785,7 +786,10 @@ public class Parse {
      * @return String
      */
     String removeS(String str) {
-        return str.substring(0, str.length() - 2);
+        if (str.length()>2 && str.charAt(str.length() - 1) == 's' && str.charAt(str.length() - 2) == '\'') {
+            return str.substring(0, str.length() - 2);
+        }
+        return str;
     }
 
     /**
@@ -812,74 +816,131 @@ public class Parse {
      * @return String
      */
     public String dotsBetweenWords(String str) {
-        return str.replaceAll(".", "");
+        return str.replaceAll("\\.", "");
+
     }
+
+    public String cleanTerm(String term) {
+        String temp = dotsBetweenWords(term);
+        temp = removeS(temp);
+        temp = temp.replace(",", "");
+        temp = temp.replaceAll("[\\[\\](){}]|\"|:|;", "");
+        return temp;
+    }
+    public String checkIfNull(StringTokenizer doc){
+        String potentialTerm = null;
+        if (stackOfTempTerms.empty()) {
+            if(doc.hasMoreTokens())
+                potentialTerm = doc.nextToken().replaceAll("[\\[\\](){}]|\"|:|;", "");;
+        } else {
+            potentialTerm = stackOfTempTerms.pop();
+        }
+        return potentialTerm;
+    }
+
 
     public void parse() {
         StringTokenizer doc = new StringTokenizer(content);
+        String [] terms;
         while (doc.hasMoreTokens()) {
-            String potentialTerm = doc.nextToken().replaceAll("[\\[\\](){}]|\"|:|;", "");
-            parseTerm(doc, potentialTerm);
+            String potentialTerm = checkIfNull(doc);
+            if(potentialTerm != null) {
+                terms = parseTerm(doc, potentialTerm);
+                if(terms != null) {
+                    for (int i = 0; i < terms.length; i++) {
+                        System.out.println(terms[i]);
+                    }
+                }
+            }
         }
     }
 
-    void parseTerm(StringTokenizer doc, String potentialTerm) {
+    public String[] parseTerm(StringTokenizer doc, String potentialTerm) {
 
+        Matcher isTag = textTags.matcher((potentialTerm));
 
-        Matcher dotsM = dotsP.matcher(potentialTerm);
-        Matcher wordM = wordP.matcher(potentialTerm);
+        String[] potentialTermsArr;
+        String nextTerm = "";
+
+        if (stopWords.contains(potentialTerm)) { //todo - do we want counter for words in documents?
+            potentialTerm = checkIfNull(doc);
+        }
+        if (isTag.matches()) {
+            potentialTerm = checkIfNull(doc);
+        }
+
         Matcher numberM = numberP.matcher(potentialTerm);
-        Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
-        Matcher belongsM = belongsP.matcher(potentialTerm);
+
         Matcher hyphenWordsM = hyphenWordsP.matcher(potentialTerm);
         Matcher hyphenNumbersM = hyphenNumbersP.matcher(potentialTerm);
 
 
         if (hyphenNumbersM.matches()) {    //if its an expression with only numbers and hyphens
             String tempTerm = potentialTerm;
-            String[] potentialTermsArr = tempTerm.split("-");
+            potentialTermsArr = tempTerm.split("-");
+            return potentialTermsArr;//todo - no need to pass all the function
         }
 
-        else if (hyphenWordsM.matches()) {   //if its an expression with only numbers and hyphens
+        if (hyphenWordsM.matches()) {   //if its an expression with only words and hyphens
             String tempTerm = potentialTerm;
-            String[] potentialTermsArr = tempTerm.split("-");
+            potentialTermsArr = wordsWithHyphen(tempTerm);
+            return potentialTermsArr;   //todo - no need to pass all the function
         }
 
-        if(numberM.find()) {    //numbers with signs
+        if (numberM.find()) {    //numbers with signs
             char last = potentialTerm.charAt(potentialTerm.length() - 1);
             if (last == '$') {
                 String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
                 potentialTerm = dollar(tempTerm);
-            } else if (last == '%') {
+                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                potentialTermsArr[0] = potentialTerm;
+                return potentialTermsArr;
+            }
+            if (last == '%') {
                 String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
                 potentialTerm = percent(tempTerm);
+                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                potentialTermsArr[0] = potentialTerm;
+                return potentialTermsArr;
+            }
+            if (last == ',') {
+                potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
+                numberM = numberP.matcher(potentialTerm);
             }
         }
 
-        String nextTerm = "";
         if (numberM.matches()) { //if the term is a legal number (including dots and commas)
+            nextTerm = checkIfNull(doc);
+            if(nextTerm != null) {
+                Matcher ucNext = upperCaseP.matcher(nextTerm);
+                if (ucNext.matches()) {     // checks dates
+                    String tempNextTerm = nextTerm.toLowerCase();
+                    if (months.containsKey(tempNextTerm)) {
+                        potentialTerm = potentialTerm + " " + tempNextTerm;  //if i have day + month
 
-            if (stackOfTempTerms.empty()) {
-                nextTerm = doc.nextToken();
-            } else {
-                nextTerm = stackOfTempTerms.pop();
-            }
-            Matcher ucNext = upperCaseP.matcher(nextTerm);
-            if (ucNext.matches()) {     // checks dates
-                String tempNextTerm = nextTerm.toLowerCase();
-                if (months.containsKey(tempNextTerm)) {
-                    potentialTerm = potentialTerm + " " + tempNextTerm;  //if i have day + month
-                    nextTerm = doc.nextToken();
-                    if (numberM.matches()) {
-                        potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
-                    } else {
-                        stackOfTempTerms.push(nextTerm);   // the third term is not a year - save in stack
+                        nextTerm = checkIfNull(doc);
+                        if (nextTerm != null) {
+                            Matcher isYear = numberP.matcher(nextTerm);
+                        if (isYear.matches()) {
+                            potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
+                            potentialTerm = dates(potentialTerm);
+                            potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                            potentialTermsArr[0] = potentialTerm;
+                            return potentialTermsArr;
+                        } else {
+                            stackOfTempTerms.push(nextTerm);   // the third term is not a year - save in stack
+                            potentialTerm = dates(potentialTerm);
+                            potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                            potentialTermsArr[0] = potentialTerm;
+                            return potentialTermsArr;
+                        }
                     }
+                        } else {
+                            stackOfTempTerms.push(nextTerm);   //the second term is not a month - save in stack
+                        }
                 } else {
-                    stackOfTempTerms.push(nextTerm);   //the second term is not a month - save in stack
+                    stackOfTempTerms.push(nextTerm);    //the second term is not upper case - save in stack
                 }
-            } else {
-                stackOfTempTerms.push(nextTerm);    //the second term is not upper case - save in stack
             }
 
             if (potentialTerm.contains(".")) {    //decimal number or ip address
@@ -887,79 +948,112 @@ public class Parse {
                     potentialTerm = numbers(potentialTerm);
                 }
             }
-
-            if (stackOfTempTerms.empty()) {
-                nextTerm = doc.nextToken();
-            } else {
-                nextTerm = stackOfTempTerms.pop();
-            }
-            String tempNextTerm = nextTerm.toLowerCase();
-            if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
-                tempNextTerm = potentialTerm + " " + tempNextTerm;
-                potentialTerm = percent(tempNextTerm);
-            } else if (tempNextTerm.equals("dollar")) {    //checks if its a money expression
-                tempNextTerm = potentialTerm + " " + tempNextTerm;
-                potentialTerm = dollar(tempNextTerm);
-            } else {
-                stackOfTempTerms.push(nextTerm);   //if its not a percent or money
+            nextTerm = checkIfNull(doc);
+            if(nextTerm != null) {
+                String tempNextTerm = nextTerm.toLowerCase();
+                if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
+                    tempNextTerm = potentialTerm + " " + tempNextTerm;
+                    potentialTerm = percent(tempNextTerm);
+                    potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                    potentialTermsArr[0] = potentialTerm;
+                    return potentialTermsArr;
+                } else if (tempNextTerm.equals("dollar")) {    //checks if its a money expression
+                    tempNextTerm = potentialTerm + " " + tempNextTerm;
+                    potentialTerm = dollar(tempNextTerm);
+                    potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                    potentialTermsArr[0] = potentialTerm;
+                    return potentialTermsArr;
+                } else {
+                    stackOfTempTerms.push(nextTerm);   //if its not a percent or money
+                }
             }
         }     //end of checking numbers
 
+        Matcher wordM = wordP.matcher(potentialTerm);
+
         if (wordM.matches()) {  //if the term is a word
-            if (upperCaseM.find()) {
+            potentialTerm = cleanTerm(potentialTerm);
+            Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
+            if (upperCaseM.matches()) {
                 String temp = potentialTerm.toLowerCase();
-                if (months.containsKey(temp)){   //if its a month
-                    if(stackOfTempTerms.empty())
-                        nextTerm = doc.nextToken();
-                    else nextTerm = stackOfTempTerms.pop();
-                    Matcher nextTermIsNumber = numberP.matcher(nextTerm);
-                    if(nextTermIsNumber.matches()) {
-                        potentialTerm = potentialTerm + " " + nextTerm; //should be sent to dates? Ron? todo
+                if (months.containsKey(temp)) {   //if its a month
+                    nextTerm = checkIfNull(doc);
+                    if(nextTerm!=null){
+                    String tempNextTerm = nextTerm;
+                    if (nextTerm.charAt(nextTerm.length() - 1) == ',') {
+                        tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 2);
+                    }
+                    Matcher nextTermIsNumber = numberP.matcher(tempNextTerm);
+                    if (nextTermIsNumber.matches()) {   //if month and day
+                        potentialTerm = potentialTerm + " " + tempNextTerm;
+                        nextTerm = checkIfNull(doc);
+                        if (nextTerm != null) {
+                            tempNextTerm = nextTerm;
+                            if (nextTerm.charAt(nextTerm.length() - 1) == ',') {
+                                tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 2);
+                            }
+                            nextTermIsNumber = numberP.matcher(tempNextTerm);
+                            if (nextTermIsNumber.matches()) {    //if month, day and year
+                                potentialTerm = potentialTerm + " " + tempNextTerm;
+                                potentialTerm = dates(potentialTerm);
+                                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                                potentialTermsArr[0] = potentialTerm;
+                                return potentialTermsArr;
+                            } else {  //the third term is not a year
+                                stackOfTempTerms.push(nextTerm);
+                                potentialTerm = dates(potentialTerm);
+                                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                                potentialTermsArr[0] = potentialTerm;
+                                return potentialTermsArr;
+                            }
+                        }
+                    } else {   //the second term is not a day
+                        stackOfTempTerms.push(nextTerm);
+                    }
+                    potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                    potentialTermsArr[0] = potentialTerm;
+                    return potentialTermsArr;
+                }
+                } else {
+                    nextTerm = checkIfNull(doc);
+                    if(nextTerm!=null) {
+                        String tempNextTerm = cleanTerm(nextTerm);
+                        Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
+
+                        while (tempNextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
+                            char lastChar = nextTerm.charAt(nextTerm.length() - 1); //
+                            if (lastChar == '.')
+                                break;
+                            potentialTerm = potentialTerm + " " + tempNextTerm;
+                            nextTerm = checkIfNull(doc);
+                            if (nextTerm != null) {
+                                tempNextTerm = cleanTerm(nextTerm);
+                                nextTermUC = upperCaseP.matcher(tempNextTerm);
+                            }
+                        }
+                        if (nextTerm != null) {
+                            stackOfTempTerms.push(nextTerm);
+                        }
+                    }
+
+                    if (potentialTerm.contains(" ")) {
+                        String[] potentialTerms = upperCaseWords(potentialTerm);  //todo - no need to pass all the function
+                        return potentialTerms;
+                    } else {
+                        potentialTerm = potentialTerm.toLowerCase();
+                        potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                        potentialTermsArr[0] = potentialTerm;
+                        return potentialTermsArr;
                     }
                 }
-                else if(upperCaseM.matches()) { //what about j.k rowling? what about stop words? Ron? todo
-
-                        if (stackOfTempTerms.empty())
-                            nextTerm = stackOfTempTerms.pop();
-                        else nextTerm = doc.nextToken();
-                        Matcher nextTermUC = upperCaseP.matcher(nextTerm);
-                        while(nextTermUC.matches()) {
-                            potentialTerm = potentialTerm + " " + nextTerm;
-                            if (stackOfTempTerms.empty())
-                                nextTerm = stackOfTempTerms.pop();
-                            else nextTerm = doc.nextToken();
-                            nextTermUC = upperCaseP.matcher(nextTerm);
-                        }
-                        stackOfTempTerms.push(nextTerm);
-                        if(potentialTerm.contains(" ")){
-                            String[] potentialTerms = upperCaseWords(potentialTerm);
-                        }
-                        else {
-                            potentialTerm = potentialTerm.toLowerCase();
-                        }
-                }
-                else if(potentialTerm.charAt(potentialTerm.length()-1) == 's'
-                        && potentialTerm.charAt(potentialTerm.length()-2)=='\'') {
-                    potentialTerm = removeS(potentialTerm);
-                }
-                if(dotsM.matches()) {
-                    potentialTerm = dotsBetweenWords(potentialTerm);
-                }
-                
-
-
-             /*   if (months.get(potentialTerm) != null) {
-                    parseTerm(doc, doc.nextToken());
-                }
-                String nextTerm = doc.nextToken();
-                Matcher isNum = numberP.matcher(nextTerm);
-                if (isNum.find()) {
-
-                } else {
-                    parseTerm(doc, nextTerm);
-                }*/
             }
         }
+        if(potentialTerm!=null) {
+            potentialTermsArr = new String[1]; //todo - no need to pass all the function
+            potentialTermsArr[0] = potentialTerm;
+            return potentialTermsArr;
+        }
+        else return null;
     }
 
 }

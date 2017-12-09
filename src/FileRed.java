@@ -89,11 +89,11 @@ public class FileRed {
         document.setPositionInFile(position);
         if(matchDocNo.find()) {
             document.setDocNo(matchDocNo.group());
-            System.out.println(document.getDocNo());
+//            System.out.println(document.getDocNo());
         }
         if(matchText.find()) {
-            Parse parse = new Parse(document, matchText.group());
-            //parse.parse();
+            Parse parseDoc = new Parse(document, matchText.group());
+            parseDoc.parse();
         }
     }
 

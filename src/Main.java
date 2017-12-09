@@ -13,18 +13,19 @@ import java.util.regex.Pattern;
 
 public class Main {
     public static void main(String [] args) {
-        Pattern pattern = Pattern.compile("\\w+");
 
-        Matcher matcher1 = pattern.matcher("dsfdsf,");
-        Matcher matcher2 = pattern.matcher("34-23423-34-");
-
-        if(matcher1.matches()) {
-            System.out.println("tags are words");
-        }
-        if(matcher2.matches()) {
-            System.out.println("numbers with dots and psix");
-        }
-        System.out.println("done");
+//        Pattern pattern = Pattern.compile("\\w+");
+//
+//        Matcher matcher1 = pattern.matcher("dsfdsf,");
+//        Matcher matcher2 = pattern.matcher("34-23423-34-");
+//
+//        if(matcher1.matches()) {
+//            System.out.println("tags are words");
+//        }
+//        if(matcher2.matches()) {
+//            System.out.println("numbers with dots and psix");
+//        }
+//        System.out.println("done");
 //        ReadFile readFile = new ReadFile();
 //        try {
 //            readFile.readDocs();
@@ -48,10 +49,10 @@ public class Main {
 //            System.out.println("basa");
 
 
-        //FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
+        FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
         //FileRed fileRed = new FileRed("corpus");
 
-        //fileRed.readCorpus();
+        fileRed.readCorpus();
     }
 
 }
