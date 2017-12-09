@@ -8,15 +8,24 @@ import java.util.regex.Pattern;
  */
 public class Parse {
 
-    private Document document;
-    private String content;
-    private static Map<String , String> months;
+    private static Map<String, String> months;
     private static List<String> listMonth;
     private static HashMap terms;
+    private Document document;
+    private String content;
     private Stack<String> stackOfTempTerms;
+    private Pattern dotsP;
+    private Pattern wordP;
+    private Pattern numberP;
+    private Pattern upperCaseP;
+    private Pattern belongsP;
+    private Pattern hyphenWordsP;
+    private Pattern hyphenNumbersP;
+    private static HashSet<String> stopWords;
 
     /**
      * constructor
+     *
      * @param document
      * @param content
      */
@@ -25,128 +34,659 @@ public class Parse {
         this.content = content;
         stackOfTempTerms = new Stack<>();
         months = new HashMap<String, String>();
+        dotsP = Pattern.compile("(\\w\\.)+\\w|");
+        wordP = Pattern.compile("\\w+");
+        numberP = Pattern.compile("\\d+(.\\d+)*|\\d+(,\\d+)+(.\\d+)*");
+        upperCaseP = Pattern.compile("[A-Z][a-z]+|[A-Z]+");
+        belongsP = Pattern.compile("\\w+\\'s");
+        hyphenWordsP = Pattern.compile("\\w+(-\\w+)+");
+        hyphenNumbersP = Pattern.compile("\\d+(-\\d+)+");
+
         setMonthMap();
+        setStopWords();
 
         terms = new HashMap();
     }
 
-    public static void setArrayMonths() {
+    private void setStopWords() {
+        stopWords.add("a");
+        stopWords.add("a's");
+        stopWords.add("able");
+        stopWords.add("about");
+        stopWords.add("above");
+        stopWords.add("according");
+        stopWords.add("accordingly");
+        stopWords.add("across");
+        stopWords.add("actually");
+        stopWords.add("after");
+        stopWords.add("afterwards");
+        stopWords.add("again");
+        stopWords.add("against");
+        stopWords.add("ain't");
+        stopWords.add("all");
+        stopWords.add("allow");
+        stopWords.add("allows");
+        stopWords.add("almost");
+        stopWords.add("alone");
+        stopWords.add("along");
+        stopWords.add("already");
+        stopWords.add("also");
+        stopWords.add("although");
+        stopWords.add("always");
+        stopWords.add("am");
+        stopWords.add("among");
+        stopWords.add("amongst");
+        stopWords.add("an");
+        stopWords.add("and");
+        stopWords.add("another");
+        stopWords.add("any");
+        stopWords.add("anybody");
+        stopWords.add("anyhow");
+        stopWords.add("anyone");
+        stopWords.add("anything");
+        stopWords.add("anyway");
+        stopWords.add("anyways");
+        stopWords.add("anywhere");
+        stopWords.add("apart");
+        stopWords.add("appear");
+        stopWords.add("appreciate");
+        stopWords.add("appropriate");
+        stopWords.add("are");
+        stopWords.add("aren't");
+        stopWords.add("around");
+        stopWords.add("as");
+        stopWords.add("aside");
+        stopWords.add("ask");
+        stopWords.add("asking");
+        stopWords.add("associated");
+        stopWords.add("at");
+        stopWords.add("available");
+        stopWords.add("away");
+        stopWords.add("awfully");
+        stopWords.add("b");
+        stopWords.add("be");
+        stopWords.add("became");
+        stopWords.add("because");
+        stopWords.add("become");
+        stopWords.add("becomes");
+        stopWords.add("becoming");
+        stopWords.add("been");
+        stopWords.add("before");
+        stopWords.add("beforehand");
+        stopWords.add("behind");
+        stopWords.add("being");
+        stopWords.add("believe");
+        stopWords.add("below");
+        stopWords.add("beside");
+        stopWords.add("besides");
+        stopWords.add("best");
+        stopWords.add("better");
+        stopWords.add("between");
+        stopWords.add("beyond");
+        stopWords.add("both");
+        stopWords.add("brief");
+        stopWords.add("but");
+        stopWords.add("by");
+        stopWords.add("c");
+        stopWords.add("c'mon");
+        stopWords.add("c's");
+        stopWords.add("came");
+        stopWords.add("can");
+        stopWords.add("can't");
+        stopWords.add("cannot");
+        stopWords.add("cant");
+        stopWords.add("cause");
+        stopWords.add("causes");
+        stopWords.add("certain");
+        stopWords.add("certainly");
+        stopWords.add("changes");
+        stopWords.add("clearly");
+        stopWords.add("co");
+        stopWords.add("com");
+        stopWords.add("come");
+        stopWords.add("comes");
+        stopWords.add("concerning");
+        stopWords.add("consequently");
+        stopWords.add("consider");
+        stopWords.add("considering");
+        stopWords.add("contain");
+        stopWords.add("containing");
+        stopWords.add("contains");
+        stopWords.add("corresponding");
+        stopWords.add("could");
+        stopWords.add("couldn't");
+        stopWords.add("course");
+        stopWords.add("currently");
+        stopWords.add("d");
+        stopWords.add("definitely");
+        stopWords.add("described");
+        stopWords.add("despite");
+        stopWords.add("did");
+        stopWords.add("didn't");
+        stopWords.add("different");
+        stopWords.add("do");
+        stopWords.add("does");
+        stopWords.add("doesn't");
+        stopWords.add("doing");
+        stopWords.add("don't");
+        stopWords.add("done");
+        stopWords.add("down");
+        stopWords.add("downwards");
+        stopWords.add("during");
+        stopWords.add("e");
+        stopWords.add("each");
+        stopWords.add("edu");
+        stopWords.add("eg");
+        stopWords.add("eight");
+        stopWords.add("either");
+        stopWords.add("else");
+        stopWords.add("elsewhere");
+        stopWords.add("enough");
+        stopWords.add("entirely");
+        stopWords.add("especially");
+        stopWords.add("et");
+        stopWords.add("etc");
+        stopWords.add("even");
+        stopWords.add("ever");
+        stopWords.add("every");
+        stopWords.add("everybody");
+        stopWords.add("everyone");
+        stopWords.add("everything");
+        stopWords.add("everywhere");
+        stopWords.add("ex");
+        stopWords.add("exactly");
+        stopWords.add("example");
+        stopWords.add("except");
+        stopWords.add("f");
+        stopWords.add("far");
+        stopWords.add("few");
+        stopWords.add("fifth");
+        stopWords.add("first");
+        stopWords.add("five");
+        stopWords.add("followed");
+        stopWords.add("following");
+        stopWords.add("follows");
+        stopWords.add("for");
+        stopWords.add("former");
+        stopWords.add("formerly");
+        stopWords.add("forth");
+        stopWords.add("four");
+        stopWords.add("from");
+        stopWords.add("further");
+        stopWords.add("furthermore");
+        stopWords.add("g");
+        stopWords.add("get");
+        stopWords.add("gets");
+        stopWords.add("getting");
+        stopWords.add("given");
+        stopWords.add("gives");
+        stopWords.add("go");
+        stopWords.add("goes");
+        stopWords.add("going");
+        stopWords.add("gone");
+        stopWords.add("got");
+        stopWords.add("gotten");
+        stopWords.add("greetings");
+        stopWords.add("h");
+        stopWords.add("had");
+        stopWords.add("hadn't");
+        stopWords.add("happens");
+        stopWords.add("hardly");
+        stopWords.add("has");
+        stopWords.add("hasn't");
+        stopWords.add("have");
+        stopWords.add("haven't");
+        stopWords.add("having");
+        stopWords.add("he");
+        stopWords.add("he's");
+        stopWords.add("hello");
+        stopWords.add("help");
+        stopWords.add("hence");
+        stopWords.add("her");
+        stopWords.add("here");
+        stopWords.add("here's");
+        stopWords.add("hereafter");
+        stopWords.add("hereby");
+        stopWords.add("herein");
+        stopWords.add("hereupon");
+        stopWords.add("hers");
+        stopWords.add("herself");
+        stopWords.add("hi");
+        stopWords.add("him");
+        stopWords.add("himself");
+        stopWords.add("his");
+        stopWords.add("hither");
+        stopWords.add("hopefully");
+        stopWords.add("how");
+        stopWords.add("howbeit");
+        stopWords.add("however");
+        stopWords.add("i");
+        stopWords.add("i'd");
+        stopWords.add("i'll");
+        stopWords.add("i'm");
+        stopWords.add("i've");
+        stopWords.add("ie");
+        stopWords.add("if");
+        stopWords.add("ignored");
+        stopWords.add("immediate");
+        stopWords.add("in");
+        stopWords.add("inasmuch");
+        stopWords.add("inc");
+        stopWords.add("indeed");
+        stopWords.add("indicate");
+        stopWords.add("indicated");
+        stopWords.add("indicates");
+        stopWords.add("inner");
+        stopWords.add("insofar");
+        stopWords.add("instead");
+        stopWords.add("into");
+        stopWords.add("inward");
+        stopWords.add("is");
+        stopWords.add("isn't");
+        stopWords.add("it");
+        stopWords.add("it'd");
+        stopWords.add("it'll");
+        stopWords.add("it's");
+        stopWords.add("its");
+        stopWords.add("itself");
+        stopWords.add("j");
+        stopWords.add("just");
+        stopWords.add("k");
+        stopWords.add("keep");
+        stopWords.add("keeps");
+        stopWords.add("kept");
+        stopWords.add("know");
+        stopWords.add("knows");
+        stopWords.add("known");
+        stopWords.add("l");
+        stopWords.add("last");
+        stopWords.add("lately");
+        stopWords.add("later");
+        stopWords.add("latter");
+        stopWords.add("latterly");
+        stopWords.add("least");
+        stopWords.add("less");
+        stopWords.add("lest");
+        stopWords.add("let");
+        stopWords.add("let's");
+        stopWords.add("like");
+        stopWords.add("liked");
+        stopWords.add("likely");
+        stopWords.add("little");
+        stopWords.add("look");
+        stopWords.add("looking");
+        stopWords.add("looks");
+        stopWords.add("ltd");
+        stopWords.add("m");
+        stopWords.add("mainly");
+        stopWords.add("many");
+        stopWords.add("may");
+        stopWords.add("maybe");
+        stopWords.add("me");
+        stopWords.add("mean");
+        stopWords.add("meanwhile");
+        stopWords.add("merely");
+        stopWords.add("might");
+        stopWords.add("more");
+        stopWords.add("moreover");
+        stopWords.add("most");
+        stopWords.add("mostly");
+        stopWords.add("much");
+        stopWords.add("must");
+        stopWords.add("my");
+        stopWords.add("myself");
+        stopWords.add("n");
+        stopWords.add("name");
+        stopWords.add("namely");
+        stopWords.add("nd");
+        stopWords.add("near");
+        stopWords.add("nearly");
+        stopWords.add("necessary");
+        stopWords.add("need");
+        stopWords.add("needs");
+        stopWords.add("neither");
+        stopWords.add("never");
+        stopWords.add("nevertheless");
+        stopWords.add("new");
+        stopWords.add("next");
+        stopWords.add("nine");
+        stopWords.add("no");
+        stopWords.add("nobody");
+        stopWords.add("non");
+        stopWords.add("none");
+        stopWords.add("noone");
+        stopWords.add("nor");
+        stopWords.add("normally");
+        stopWords.add("not");
+        stopWords.add("nothing");
+        stopWords.add("novel");
+        stopWords.add("now");
+        stopWords.add("nowhere");
+        stopWords.add("o");
+        stopWords.add("obviously");
+        stopWords.add("of");
+        stopWords.add("off");
+        stopWords.add("often");
+        stopWords.add("oh");
+        stopWords.add("ok");
+        stopWords.add("okay");
+        stopWords.add("old");
+        stopWords.add("on");
+        stopWords.add("once");
+        stopWords.add("one");
+        stopWords.add("ones");
+        stopWords.add("only");
+        stopWords.add("onto");
+        stopWords.add("or");
+        stopWords.add("other");
+        stopWords.add("others");
+        stopWords.add("otherwise");
+        stopWords.add("ought");
+        stopWords.add("our");
+        stopWords.add("ours");
+        stopWords.add("ourselves");
+        stopWords.add("out");
+        stopWords.add("outside");
+        stopWords.add("over");
+        stopWords.add("overall");
+        stopWords.add("own");
+        stopWords.add("p");
+        stopWords.add("particular");
+        stopWords.add("particularly");
+        stopWords.add("per");
+        stopWords.add("perhaps");
+        stopWords.add("placed");
+        stopWords.add("please");
+        stopWords.add("plus");
+        stopWords.add("possible");
+        stopWords.add("presumably");
+        stopWords.add("probably");
+        stopWords.add("provides");
+        stopWords.add("q");
+        stopWords.add("que");
+        stopWords.add("quite");
+        stopWords.add("qv");
+        stopWords.add("r");
+        stopWords.add("rather");
+        stopWords.add("rd");
+        stopWords.add("re");
+        stopWords.add("really");
+        stopWords.add("reasonably");
+        stopWords.add("regarding");
+        stopWords.add("regardless");
+        stopWords.add("regards");
+        stopWords.add("relatively");
+        stopWords.add("respectively");
+        stopWords.add("right");
+        stopWords.add("s");
+        stopWords.add("said");
+        stopWords.add("same");
+        stopWords.add("saw");
+        stopWords.add("say");
+        stopWords.add("saying");
+        stopWords.add("says");
+        stopWords.add("second");
+        stopWords.add("secondly");
+        stopWords.add("see");
+        stopWords.add("seeing");
+        stopWords.add("seem");
+        stopWords.add("seemed");
+        stopWords.add("seeming");
+        stopWords.add("seems");
+        stopWords.add("seen");
+        stopWords.add("self");
+        stopWords.add("selves");
+        stopWords.add("sensible");
+        stopWords.add("sent");
+        stopWords.add("serious");
+        stopWords.add("seriously");
+        stopWords.add("seven");
+        stopWords.add("several");
+        stopWords.add("shall");
+        stopWords.add("she");
+        stopWords.add("should");
+        stopWords.add("shouldn't");
+        stopWords.add("since");
+        stopWords.add("six");
+        stopWords.add("so");
+        stopWords.add("some");
+        stopWords.add("somebody");
+        stopWords.add("somehow");
+        stopWords.add("someone");
+        stopWords.add("something");
+        stopWords.add("sometime");
+        stopWords.add("sometimes");
+        stopWords.add("somewhat");
+        stopWords.add("somewhere");
+        stopWords.add("soon");
+        stopWords.add("sorry");
+        stopWords.add("specified");
+        stopWords.add("specify");
+        stopWords.add("specifying");
+        stopWords.add("still");
+        stopWords.add("sub");
+        stopWords.add("such");
+        stopWords.add("sup");
+        stopWords.add("sure");
+        stopWords.add("t");
+        stopWords.add("t's");
+        stopWords.add("take");
+        stopWords.add("taken");
+        stopWords.add("tell");
+        stopWords.add("tends");
+        stopWords.add("th");
+        stopWords.add("than");
+        stopWords.add("thank");
+        stopWords.add("thanks");
+        stopWords.add("thanx");
+        stopWords.add("that");
+        stopWords.add("that's");
+        stopWords.add("thats");
+        stopWords.add("the");
+        stopWords.add("their");
+        stopWords.add("theirs");
+        stopWords.add("them");
+        stopWords.add("themselves");
+        stopWords.add("then");
+        stopWords.add("thence");
+        stopWords.add("there");
+        stopWords.add("there's");
+        stopWords.add("thereafter");
+        stopWords.add("thereby");
+        stopWords.add("therefore");
+        stopWords.add("therein");
+        stopWords.add("theres");
+        stopWords.add("thereupon");
+        stopWords.add("these");
+        stopWords.add("they");
+        stopWords.add("they'd");
+        stopWords.add("they'll");
+        stopWords.add("they're");
+        stopWords.add("they've");
+        stopWords.add("think");
+        stopWords.add("third");
+        stopWords.add("this");
+        stopWords.add("thorough");
+        stopWords.add("thoroughly");
+        stopWords.add("those");
+        stopWords.add("though");
+        stopWords.add("three");
+        stopWords.add("through");
+        stopWords.add("throughout");
+        stopWords.add("thru");
+        stopWords.add("thus");
+        stopWords.add("to");
+        stopWords.add("together");
+        stopWords.add("too");
+        stopWords.add("took");
+        stopWords.add("toward");
+        stopWords.add("towards");
+        stopWords.add("tried");
+        stopWords.add("tries");
+        stopWords.add("truly");
+        stopWords.add("try");
+        stopWords.add("trying");
+        stopWords.add("twice");
+        stopWords.add("two");
+        stopWords.add("u");
+        stopWords.add("un");
+        stopWords.add("under");
+        stopWords.add("unfortunately");
+        stopWords.add("unless");
+        stopWords.add("unlikely");
+        stopWords.add("until");
+        stopWords.add("unto");
+        stopWords.add("up");
+        stopWords.add("upon");
+        stopWords.add("us");
+        stopWords.add("use");
+        stopWords.add("used");
+        stopWords.add("useful");
+        stopWords.add("uses");
+        stopWords.add("using");
+        stopWords.add("usually");
+        stopWords.add("uucp");
+        stopWords.add("v");
+        stopWords.add("value");
+        stopWords.add("various");
+        stopWords.add("very");
+        stopWords.add("via");
+        stopWords.add("viz");
+        stopWords.add("vs");
+        stopWords.add("w");
+        stopWords.add("want");
+        stopWords.add("wants");
+        stopWords.add("was");
+        stopWords.add("wasn't");
+        stopWords.add("way");
+        stopWords.add("we");
+        stopWords.add("we'd");
+        stopWords.add("we'll");
+        stopWords.add("we're");
+        stopWords.add("we've");
+        stopWords.add("welcome");
+        stopWords.add("well");
+        stopWords.add("went");
+        stopWords.add("were");
+        stopWords.add("weren't");
+        stopWords.add("what");
+        stopWords.add("what's");
+        stopWords.add("whatever");
+        stopWords.add("when");
+        stopWords.add("whence");
+        stopWords.add("whenever");
+        stopWords.add("where");
+        stopWords.add("where's");
+        stopWords.add("whereafter");
+        stopWords.add("whereas");
+        stopWords.add("whereby");
+        stopWords.add("wherein");
+        stopWords.add("whereupon");
+        stopWords.add("wherever");
+        stopWords.add("whether");
+        stopWords.add("which");
+        stopWords.add("while");
+        stopWords.add("whither");
+        stopWords.add("who");
+        stopWords.add("who's");
+        stopWords.add("whoever");
+        stopWords.add("whole");
+        stopWords.add("whom");
+        stopWords.add("whose");
+        stopWords.add("why");
+        stopWords.add("will");
+        stopWords.add("willing");
+        stopWords.add("wish");
+        stopWords.add("with");
+        stopWords.add("within");
+        stopWords.add("without");
+        stopWords.add("won't");
+        stopWords.add("wonder");
+        stopWords.add("would");
+        stopWords.add("would");
+        stopWords.add("wouldn't");
+        stopWords.add("x");
+        stopWords.add("y");
+        stopWords.add("yes");
+        stopWords.add("yet");
+        stopWords.add("you");
+        stopWords.add("you'd");
+        stopWords.add("you'll");
+        stopWords.add("you're");
+        stopWords.add("you've");
+        stopWords.add("your");
+        stopWords.add("yours");
+        stopWords.add("yourself");
+        stopWords.add("yourselves");
+        stopWords.add("z");
+        stopWords.add("zero");
 
     }
 
-    public void setMonthMap(){
-        months.put("jan" , "1");
-        months.put("january" , "1");
-        months.put("feb" , "2");
-        months.put("february" , "2");
-        months.put("mar" , "3");
-        months.put("march" , "3");
-        months.put("apr" , "4");
-        months.put("april" , "4");
-        months.put("may" , "5");
-        months.put("jun" , "6");
-        months.put("june" , "6");
-        months.put("jul" , "7");
-        months.put("july" , "7");
-        months.put("aug" , "8");
-        months.put("august" , "8");
-        months.put("sep" , "9");
-        months.put("september" , "9");
-        months.put("oct" , "10");
-        months.put("october" , "10");
-        months.put("nov" , "11");
-        months.put("november" , "11");
-        months.put("dec" , "12");
-        months.put("december" , "12");
-    }
-
-    /**
-     * function to parse number with percent to be in the format: number percent.
-     * call to the function: number to fix the decimal number.
-     * @param str
-     * @return String
-     */
-    public String percent(String str) {
-        if(str.contains("percentage")) {
-            int index = str.indexOf("percentage");
-            String result = numbers(str.substring(0, index - 1)) + " percent";
-            return result;
-        }
-        else if(str.contains("%")) {
-            int index = str.indexOf("%");
-            String result = numbers(str.substring(0, index - 1)) + " percent";
-            return result;
-        }
-        else {
-            return numbers(str.substring(0, str.indexOf(" "))) + " percent";
-        }
-    }
 
     /**
      * handle numbers: decimal numbers to be 2 digits after the point and remove comma.
+     *
      * @param str
      * @return String
      */
-    public static String numbers(String str){
-        if(str.contains(".")) {
+    public static String numbers(String str) {
+        if (str.contains(".")) {
             String[] parts = str.split(Pattern.quote("."));
             String str0 = parts[0];
             String str1 = parts[1];
             if (str1.length() > 2) {
-                int digit = (Integer.parseInt(str1.substring(1,2)))+1;
-                str = str0+ "." +Integer.parseInt(str1.substring(0,1)) + digit;
-            }
-            else
-                str = str0+ "." + str1;
+                int digit = (Integer.parseInt(str1.substring(1, 2))) + 1;
+                str = str0 + "." + Integer.parseInt(str1.substring(0, 1)) + digit;
+            } else
+                str = str0 + "." + str1;
         }
-        if(str.contains(",")){
+        if (str.contains(",")) {
             String[] parts = str.split(Pattern.quote(","));
-            String str1= "";
-            for (int i=0; i<parts.length; i++){
-                str1+=parts[i];
+            String str1 = "";
+            for (int i = 0; i < parts.length; i++) {
+                str1 += parts[i];
             }
             return str1;
         }
         return str;
     }
 
-    public static String dates(String str){
+    public static String dates(String str) {
         str = str.toLowerCase();
-        if(str.contains("th")){
-            str = str.replace("th" , "");
+        if (str.contains("th")) {
+            str = str.replace("th", "");
         }
-        if(str.contains(",")){
-            str = str.replace("," , "");
+        if (str.contains(",")) {
+            str = str.replace(",", "");
         }
 
-        String []parts = str.split(" ");
+        String[] parts = str.split(" ");
 
-        if(parts.length>2){
-            if(parts[2].length() ==2){
-                String s = "19" +parts[2];
-                parts[2] =s;
+        if (parts.length > 2) {
+            if (parts[2].length() == 2) {
+                String s = "19" + parts[2];
+                parts[2] = s;
             }
 
-            if(months.get(parts[0]) != null){
+            if (months.get(parts[0]) != null) {
                 parts[0] = months.get(parts[0]);
                 str = parts[1] + "/" + parts[0] + "/" + parts[2];
             }
-            if(months.get(parts[1]) != null){
+            if (months.get(parts[1]) != null) {
                 parts[1] = months.get(parts[1]);
                 str = parts[0] + "/" + parts[1] + "/" + parts[2];
             }
-        }
-        else{
-            if(months.get(parts[0]) != null){
-                if(parts[1].length()==4){
+        } else {
+            if (months.get(parts[0]) != null) {
+                if (parts[1].length() == 4) {
                     str = parts[0] + "/" + parts[1];
-                }
-                else {
+                } else {
                     parts[0] = months.get(parts[0]);
                     str = parts[1] + "/" + parts[0];
                 }
             }
-            if(months.get(parts[1]) != null){
+            if (months.get(parts[1]) != null) {
                 parts[1] = months.get(parts[1]);
                 str = parts[0] + "/" + parts[1];
             }
@@ -154,8 +694,56 @@ public class Parse {
         return str;
     }
 
+    public void setMonthMap() {
+        months.put("jan", "1");
+        months.put("january", "1");
+        months.put("feb", "2");
+        months.put("february", "2");
+        months.put("mar", "3");
+        months.put("march", "3");
+        months.put("apr", "4");
+        months.put("april", "4");
+        months.put("may", "5");
+        months.put("jun", "6");
+        months.put("june", "6");
+        months.put("jul", "7");
+        months.put("july", "7");
+        months.put("aug", "8");
+        months.put("august", "8");
+        months.put("sep", "9");
+        months.put("september", "9");
+        months.put("oct", "10");
+        months.put("october", "10");
+        months.put("nov", "11");
+        months.put("november", "11");
+        months.put("dec", "12");
+        months.put("december", "12");
+    }
+
+    /**
+     * function to parse number with percent to be in the format: number percent.
+     * call to the function: number to fix the decimal number.
+     *
+     * @param str
+     * @return String
+     */
+    public String percent(String str) {
+        if (str.contains("percentage")) {
+            int index = str.indexOf("percentage");
+            String result = numbers(str.substring(0, index - 1)) + " percent";
+            return result;
+        } else if (str.contains("%")) {
+            int index = str.indexOf("%");
+            String result = numbers(str.substring(0, index - 1)) + " percent";
+            return result;
+        } else {
+            return numbers(str.substring(0, str.indexOf(" "))) + " percent";
+        }
+    }
+
     /**
      * change uppercase characters to lowercase.
+     *
      * @param str
      * @return
      */
@@ -165,6 +753,7 @@ public class Parse {
 
     /**
      * expressions like Word Word (capital letter at the beginning) will be split to: word, words and word word.
+     *
      * @param str
      * @return String[]
      */
@@ -178,6 +767,7 @@ public class Parse {
 
     /**
      * expressions like word-word will be split to: word, words and word word.
+     *
      * @param str
      * @return String[]
      */
@@ -191,33 +781,33 @@ public class Parse {
     }
 
     /**
-     *
      * @param str
      * @return String
      */
     String removeS(String str) {
-        return str.substring(0,str.length() - 2);
+        return str.substring(0, str.length() - 2);
     }
 
     /**
      * number$ will turn to: number dollar
+     *
      * @param str
      * @return String
      */
     public String dollar(String str) {
 
-        if(str.contains("$")) {
+        if (str.contains("$")) {
             int index = str.indexOf("$");
             String result = numbers(str.substring(0, index - 1)) + " dollar";
             return result;
-        }
-        else {
+        } else {
             return numbers(str.substring(0, str.indexOf(" "))) + " dollar";
         }
     }
 
     /**
      * turn a.b.c to abc.
+     *
      * @param str
      * @return String
      */
@@ -227,48 +817,147 @@ public class Parse {
 
     public void parse() {
         StringTokenizer doc = new StringTokenizer(content);
-        while(doc.hasMoreTokens()) {
-            String potentialTerm = doc.nextToken().replaceAll("[\\[\\](){}]|\"|:|;","");
+        while (doc.hasMoreTokens()) {
+            String potentialTerm = doc.nextToken().replaceAll("[\\[\\](){}]|\"|:|;", "");
             parseTerm(doc, potentialTerm);
         }
     }
 
     void parseTerm(StringTokenizer doc, String potentialTerm) {
-        Pattern dotsP = Pattern.compile("(\\w\\.)+\\w|");
-        Pattern wordP = Pattern.compile("\\w+");
-        Pattern numberP = Pattern.compile("\\d+");
-        Pattern upperCaseP = Pattern.compile("[A-Z]\\w*");
-        Pattern belongsP = Pattern.compile("\\w+\\'s");
-        Pattern hypherP = Pattern.compile("(\\w+-)+\\w");
+
 
         Matcher dotsM = dotsP.matcher(potentialTerm);
         Matcher wordM = wordP.matcher(potentialTerm);
-        Matcher numperM = numberP.matcher(potentialTerm);
+        Matcher numberM = numberP.matcher(potentialTerm);
         Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
         Matcher belongsM = belongsP.matcher(potentialTerm);
+        Matcher hyphenWordsM = hyphenWordsP.matcher(potentialTerm);
+        Matcher hyphenNumbersM = hyphenNumbersP.matcher(potentialTerm);
 
-        if(wordM.find()) {  //if the term is a word
-            if(upperCaseM.find()) {
-                if(months.get(potentialTerm) != null){
-                    parseTerm(doc , doc.nextToken());
+
+        if (hyphenNumbersM.matches()) {    //if its an expression with only numbers and hyphens
+            String tempTerm = potentialTerm;
+            String[] potentialTermsArr = tempTerm.split("-");
+        }
+
+        else if (hyphenWordsM.matches()) {   //if its an expression with only numbers and hyphens
+            String tempTerm = potentialTerm;
+            String[] potentialTermsArr = tempTerm.split("-");
+        }
+
+        if(numberM.find()) {    //numbers with signs
+            char last = potentialTerm.charAt(potentialTerm.length() - 1);
+            if (last == '$') {
+                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
+                potentialTerm = dollar(tempTerm);
+            } else if (last == '%') {
+                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
+                potentialTerm = percent(tempTerm);
+            }
+        }
+
+        String nextTerm = "";
+        if (numberM.matches()) { //if the term is a legal number (including dots and commas)
+
+            if (stackOfTempTerms.empty()) {
+                nextTerm = doc.nextToken();
+            } else {
+                nextTerm = stackOfTempTerms.pop();
+            }
+            Matcher ucNext = upperCaseP.matcher(nextTerm);
+            if (ucNext.matches()) {     // checks dates
+                String tempNextTerm = nextTerm.toLowerCase();
+                if (months.containsKey(tempNextTerm)) {
+                    potentialTerm = potentialTerm + " " + tempNextTerm;  //if i have day + month
+                    nextTerm = doc.nextToken();
+                    if (numberM.matches()) {
+                        potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
+                    } else {
+                        stackOfTempTerms.push(nextTerm);   // the third term is not a year - save in stack
+                    }
+                } else {
+                    stackOfTempTerms.push(nextTerm);   //the second term is not a month - save in stack
+                }
+            } else {
+                stackOfTempTerms.push(nextTerm);    //the second term is not upper case - save in stack
+            }
+
+            if (potentialTerm.contains(".")) {    //decimal number or ip address
+                if (potentialTerm.indexOf(".") == potentialTerm.lastIndexOf(".")) {  //there is only one dot
+                    potentialTerm = numbers(potentialTerm);
+                }
+            }
+
+            if (stackOfTempTerms.empty()) {
+                nextTerm = doc.nextToken();
+            } else {
+                nextTerm = stackOfTempTerms.pop();
+            }
+            String tempNextTerm = nextTerm.toLowerCase();
+            if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
+                tempNextTerm = potentialTerm + " " + tempNextTerm;
+                potentialTerm = percent(tempNextTerm);
+            } else if (tempNextTerm.equals("dollar")) {    //checks if its a money expression
+                tempNextTerm = potentialTerm + " " + tempNextTerm;
+                potentialTerm = dollar(tempNextTerm);
+            } else {
+                stackOfTempTerms.push(nextTerm);   //if its not a percent or money
+            }
+        }     //end of checking numbers
+
+        if (wordM.matches()) {  //if the term is a word
+            if (upperCaseM.find()) {
+                String temp = potentialTerm.toLowerCase();
+                if (months.containsKey(temp)){   //if its a month
+                    if(stackOfTempTerms.empty())
+                        nextTerm = doc.nextToken();
+                    else nextTerm = stackOfTempTerms.pop();
+                    Matcher nextTermIsNumber = numberP.matcher(nextTerm);
+                    if(nextTermIsNumber.matches()) {
+                        potentialTerm = potentialTerm + " " + nextTerm; //should be sent to dates? Ron? todo
+                    }
+                }
+                else if(upperCaseM.matches()) { //what about j.k rowling? what about stop words? Ron? todo
+
+                        if (stackOfTempTerms.empty())
+                            nextTerm = stackOfTempTerms.pop();
+                        else nextTerm = doc.nextToken();
+                        Matcher nextTermUC = upperCaseP.matcher(nextTerm);
+                        while(nextTermUC.matches()) {
+                            potentialTerm = potentialTerm + " " + nextTerm;
+                            if (stackOfTempTerms.empty())
+                                nextTerm = stackOfTempTerms.pop();
+                            else nextTerm = doc.nextToken();
+                            nextTermUC = upperCaseP.matcher(nextTerm);
+                        }
+                        stackOfTempTerms.push(nextTerm);
+                        if(potentialTerm.contains(" ")){
+                            String[] potentialTerms = upperCaseWords(potentialTerm);
+                        }
+                        else {
+                            potentialTerm = potentialTerm.toLowerCase();
+                        }
+                }
+                else if(potentialTerm.charAt(potentialTerm.length()-1) == 's'
+                        && potentialTerm.charAt(potentialTerm.length()-2)=='\'') {
+                    potentialTerm = removeS(potentialTerm);
+                }
+                if(dotsM.matches()) {
+                    potentialTerm = dotsBetweenWords(potentialTerm);
+                }
+                
+
+
+             /*   if (months.get(potentialTerm) != null) {
+                    parseTerm(doc, doc.nextToken());
                 }
                 String nextTerm = doc.nextToken();
                 Matcher isNum = numberP.matcher(nextTerm);
-                if(isNum.find()){
+                if (isNum.find()) {
 
-                }
-                else {
+                } else {
                     parseTerm(doc, nextTerm);
-                }
-            }
-            else if(upperCaseM.find()) {
-
-                    String nextTerm = doc.nextToken();
-                    Matcher isUpper = upperCaseP.matcher(nextTerm);
-
-                while (isUpper.find()) {
-
-                }
+                }*/
             }
         }
     }
