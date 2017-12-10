@@ -21,6 +21,8 @@ public class Parse {
     private Pattern hyphenWordsP;
     private Pattern hyphenNumbersP;
     private Pattern textTags;
+    private HashSet<Character> specials;
+
 
     /**
      * constructor
@@ -42,6 +44,21 @@ public class Parse {
         hyphenWordsP = Pattern.compile("\\w+(-\\w+)+");
         hyphenNumbersP = Pattern.compile("\\d+(-\\d+)+");
         textTags = Pattern.compile("<(.*?)>");
+        specials = new HashSet<>();
+
+        specials.add('.');
+        specials.add(',');
+        specials.add(']');
+        specials.add('[');
+        specials.add('(');
+        specials.add(')');
+        specials.add('{');
+        specials.add('}');
+        specials.add(':');
+        specials.add(';');
+        specials.add('"');
+
+
 
         setMonthMap();
         setStopWords();
@@ -767,6 +784,7 @@ public class Parse {
      * @return String[]
      */
     public String[] wordsWithHyphen(String str) {
+        boolean flag=false;
         String s = "";
         String[] result = str.split(Pattern.quote("-"));
         for (int i = 0; i < result.length; i++) {
@@ -823,7 +841,9 @@ public class Parse {
     public String cleanTerm(String term) {
         String temp = dotsBetweenWords(term);
         temp = removeS(temp);
-        temp = temp.replace(",", "");
+        if(temp.length()>1 && temp.charAt(temp.length()-1)==',') {
+            temp = temp.substring(0,temp.length()-1);
+        }
         temp = temp.replaceAll("[\\[\\](){}]|\"|:|;", "");
         return temp;
     }
@@ -831,7 +851,7 @@ public class Parse {
         String potentialTerm = null;
         if (stackOfTempTerms.empty()) {
             if(doc.hasMoreTokens())
-                potentialTerm = doc.nextToken().replaceAll("[\\[\\](){}]|\"|:|;", "");;
+                potentialTerm = doc.nextToken();
         } else {
             potentialTerm = stackOfTempTerms.pop();
         }
@@ -862,7 +882,7 @@ public class Parse {
         String[] potentialTermsArr;
         String nextTerm = "";
 
-        if (stopWords.contains(potentialTerm)) { //todo - do we want counter for words in documents?
+        while (stopWords.contains(potentialTerm)) { //todo - do we want counter for words in documents?
             potentialTerm = checkIfNull(doc);
         }
         if (isTag.matches()) {
@@ -968,10 +988,11 @@ public class Parse {
                 }
             }
         }     //end of checking numbers
-
-        Matcher wordM = wordP.matcher(potentialTerm);
+        String tempPotential = cleanTerm(potentialTerm);
+        Matcher wordM = wordP.matcher(tempPotential);
 
         if (wordM.matches()) {  //if the term is a word
+            char last = potentialTerm.charAt(potentialTerm.length()-1);
             potentialTerm = cleanTerm(potentialTerm);
             Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
             if (upperCaseM.matches()) {
@@ -1010,29 +1031,39 @@ public class Parse {
                     } else {   //the second term is not a day
                         stackOfTempTerms.push(nextTerm);
                     }
+                    potentialTerm = potentialTerm.toLowerCase();
                     potentialTermsArr = new String[1]; //todo - no need to pass all the function
                     potentialTermsArr[0] = potentialTerm;
                     return potentialTermsArr;
                 }
                 } else {
-                    nextTerm = checkIfNull(doc);
-                    if(nextTerm!=null) {
-                        String tempNextTerm = cleanTerm(nextTerm);
-                        Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
+                  //  char lastNext = nextTerm.charAt(nextTerm.length()-1);
 
-                        while (tempNextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
-                            char lastChar = nextTerm.charAt(nextTerm.length() - 1); //
-                            if (lastChar == '.')
-                                break;
-                            potentialTerm = potentialTerm + " " + tempNextTerm;
-                            nextTerm = checkIfNull(doc);
-                            if (nextTerm != null) {
-                                tempNextTerm = cleanTerm(nextTerm);
-                                nextTermUC = upperCaseP.matcher(tempNextTerm);
-                            }
-                        }
+                    if(!(specials.contains(last))) {
+                        nextTerm = checkIfNull(doc);
                         if (nextTerm != null) {
-                            stackOfTempTerms.push(nextTerm);
+//                            if(specials.contains(lastNext)) {
+//                                nextComma = true;
+//                            }
+                            String tempNextTerm = cleanTerm(nextTerm);
+                            Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
+
+                            while (tempNextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
+                                char lastChar = nextTerm.charAt(nextTerm.length() - 1); //
+                                potentialTerm = potentialTerm + " " + tempNextTerm;
+                                if (specials.contains(lastChar)) {
+                                    nextTerm = null;
+                                    break;
+                                }
+                                nextTerm = checkIfNull(doc);
+                                if (nextTerm != null) {
+                                    tempNextTerm = cleanTerm(nextTerm);
+                                    nextTermUC = upperCaseP.matcher(tempNextTerm);
+                                }
+                            }
+                            if (nextTerm != null) {
+                                stackOfTempTerms.push(nextTerm);
+                            }
                         }
                     }
 
@@ -1041,9 +1072,15 @@ public class Parse {
                         return potentialTerms;
                     } else {
                         potentialTerm = potentialTerm.toLowerCase();
-                        potentialTermsArr = new String[1]; //todo - no need to pass all the function
-                        potentialTermsArr[0] = potentialTerm;
-                        return potentialTermsArr;
+                        potentialTerm = cleanTerm(potentialTerm);
+                        if(stopWords.contains(potentialTerm)){
+                            potentialTerm = null;
+                        }
+                        if (potentialTerm!=null) {
+                            potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                            potentialTermsArr[0] = potentialTerm;
+                            return potentialTermsArr;
+                        }
                     }
                 }
             }
