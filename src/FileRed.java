@@ -1,5 +1,7 @@
 import java.io.*;
 import java.nio.CharBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,7 +16,10 @@ public class FileRed {
     private Pattern patternDocNo;
     private Pattern patternText;
 
+    private List<Document> documents;
+
     public FileRed(String path){
+        documents = new ArrayList<Document>();
         pathStr = path;
         headDir = new File(pathStr);
         listOfDirs = headDir.listFiles();
@@ -91,42 +96,15 @@ public class FileRed {
             document.setDocNo(matchDocNo.group());
 //            System.out.println(document.getDocNo());
         }
+        documents.add(document);
+
         if(matchText.find()) {
             Parse parseDoc = new Parse(document, matchText.group());
             parseDoc.parse();
         }
     }
 
-
-    // Document document = new Document();
-
-
-
-
-
-    //document.setDocNo(cutParts(fileString, "<DOCNO>", "</DOCNO>"));
-                    //document.setPositionInFile(((Long)positionTracker).toString());
-                    //System.out.println(document.getDocNo());
-                    //String content = cutParts(fileString, "<TEXT>", "</TEXT>");
-                    //System.out.println(content);
-             //   }
-
-
-
-        String cutParts(String fileString, Matcher docM, Matcher textM) {
-
-            String text = null;
-
-               // while ((s = bufferedReader.readLine()) != null) {
-//                    positionTracker += s.getBytes().length;
-
-
-//                    if (matcher.find()) {
-//                        return matcher.group();
-//                    }
-               // }
-
-            return text;
-        }
-
+    public List<Document> getDocuments() {
+        return documents;
+    }
 }
