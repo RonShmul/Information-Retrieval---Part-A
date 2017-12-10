@@ -58,25 +58,27 @@ public class FileRed {
 
         StringBuilder fileString = new StringBuilder();
 
-            //while (bufferedReader.ready()) {
-            //StringBuilder fileString = new StringBuilder();
             String temp;
             boolean isPositionDefined = false;
             positionTracker = 0;
             long position = 0;
             //the garbage at the end make the "bufferedReader.ready()" return true and the DOCNO and content are null.. should be handled
             while ((temp = bufferedReader.readLine()) != null) {
-                positionTracker += temp.getBytes().length;
                 if(!isPositionDefined) {
                     position = positionTracker;
                     isPositionDefined = true;
                 }
+
+                positionTracker += (temp.getBytes().length);
+
                 fileString.append(temp);
                 fileString.append(" ");
-                temp.length();
+
                 if (temp.length() <= 7 && temp.contains("</TEXT>")) {
                     readDoc(fileString.toString(), position, path);
                     fileString = new StringBuilder();
+                }
+                if(temp.length() <= 5 && temp.contains("<doc>")) {
                     isPositionDefined = false;
                 }
             }
@@ -98,10 +100,11 @@ public class FileRed {
         }
         documents.add(document);
 
-        if(matchText.find()) {
-            Parse parseDoc = new Parse(document, matchText.group());
-            parseDoc.parse();
-        }
+//        if(matchText.find()) {
+//            Parse parseDoc = new Parse(document, matchText.group());
+//            parseDoc.parse();
+//        }
+
     }
 
     public List<Document> getDocuments() {
