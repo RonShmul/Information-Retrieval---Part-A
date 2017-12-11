@@ -6,7 +6,35 @@ public class Document { // A class that helps us to save data on a specific docu
     private String path;
     private String docNo;
     private long positionInFile; //the first bit of the document - where it starts
+    private int length;
+    private String commonTerm;
 
+    public Document() {
+    }
+
+    public Document(String path, String docNo, long positionInFile, int length, String commonTerm) {
+        this.path = path;
+        this.docNo = docNo;
+        this.positionInFile = positionInFile;
+        this.length = length;
+        this.commonTerm = commonTerm;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public String getCommonTerm() {
+        return commonTerm;
+    }
+
+    public void setLength(int length) {
+        this.length = length;
+    }
+
+    public void setCommonTerm(String commonTerm) {
+        this.commonTerm = commonTerm;
+    }
 
     public String getPath() {
         return path;

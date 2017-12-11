@@ -784,8 +784,7 @@ public class Parse {
      * @return String[]
      */
     public String[] wordsWithHyphen(String str) {
-        boolean flag=false;
-        String s = "";
+        String s = str;
         String[] result = str.split(Pattern.quote("-"));
         for (int i = 0; i < result.length; i++) {
             result[i] = cleanTerm(result[i]);
@@ -841,7 +840,7 @@ public class Parse {
     public String cleanTerm(String term) {
         String temp = dotsBetweenWords(term);
         temp = removeS(temp);
-        if(temp.length()>1 && temp.charAt(temp.length()-1)==',') {
+        if(temp.length()>1 && specials.contains(temp.charAt(temp.length()-1)){
             temp = temp.substring(0,temp.length()-1);
         }
         temp = temp.replaceAll("[\\[\\](){}]|\"|:|;", "");
@@ -882,7 +881,7 @@ public class Parse {
         String[] potentialTermsArr;
         String nextTerm = "";
 
-        while (stopWords.contains(potentialTerm)) { //todo - do we want counter for words in documents?
+        while (stopWords.contains(potentialTerm)) {
             potentialTerm = checkIfNull(doc);
         }
         if (isTag.matches()) {
@@ -890,20 +889,28 @@ public class Parse {
         }
 
         Matcher numberM = numberP.matcher(potentialTerm);
-
         Matcher hyphenWordsM = hyphenWordsP.matcher(potentialTerm);
         Matcher hyphenNumbersM = hyphenNumbersP.matcher(potentialTerm);
 
-
         if (hyphenNumbersM.matches()) {    //if its an expression with only numbers and hyphens
             String tempTerm = potentialTerm;
+            if(specials.contains(potentialTerm.charAt(potentialTerm.length() - 1))){
+                tempTerm = potentialTerm.substring(0,potentialTerm.length()-1);
+            }
             potentialTermsArr = tempTerm.split("-");
-            return potentialTermsArr;//todo - no need to pass all the function
+            for (int i=0;i<potentialTermsArr.length;i++){
+                potentialTermsArr[i] = numbers(potentialTermsArr[i]);
+            }
+            return potentialTermsArr;
         }
 
         if (hyphenWordsM.matches()) {   //if its an expression with only words and hyphens
             String tempTerm = potentialTerm;
             potentialTermsArr = wordsWithHyphen(tempTerm);
+            for (int i=0;i<potentialTermsArr.length;i++){
+                potentialTermsArr[i]= cleanTerm(potentialTermsArr[i]);
+                potentialTermsArr[i].toLowerCase();
+            }
             return potentialTermsArr;   //todo - no need to pass all the function
         }
 
