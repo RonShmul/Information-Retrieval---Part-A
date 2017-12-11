@@ -1,6 +1,8 @@
 import java.io.*;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,8 +50,8 @@ public class FileRed {
         }
     }
 
-    public void readFile(File currentFile) {
-
+    public LinkedHashMap<Document, String> readFile(File currentFile) {
+        LinkedHashMap<Document, String> documentsOfFile = new LinkedHashMap<Document, String>();
         //File currFile = new File("C:\\Users\\Sivan\\IdeaProjects\\Information Retrieval-Part A\\src\\ahlaDoc");
         BufferedReader bufferedReader = null;
         try {
@@ -75,7 +77,7 @@ public class FileRed {
                 fileString.append(" ");
 
                 if (temp.length() <= 7 && temp.contains("</TEXT>")) {
-                    readDoc(fileString.toString(), position, path);
+                    readDoc(fileString.toString(), position, path, documentsOfFile);
                     fileString = new StringBuilder();
                 }
                 if(temp.length() <= 5 && temp.contains("<doc>")) {
@@ -85,10 +87,12 @@ public class FileRed {
             bufferedReader.close();
             } catch (IOException e1) {
             e1.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
+        return documentsOfFile;
     }
-    public void readDoc(String documentText,long position, String path) {
+    public void readDoc(String documentText,long position, String path, LinkedHashMap<Document, String> documentsOfFile) throws Exception {
         Matcher matchDocNo = patternDocNo.matcher(documentText);
         Matcher matchText = patternText.matcher(documentText);
         Document document = new Document();
@@ -100,10 +104,10 @@ public class FileRed {
         }
         documents.add(document);
 
-//        if(matchText.find()) {
-//            Parse parseDoc = new Parse(document, matchText.group());
-//            parseDoc.parse();
-//        }
+        if(matchText.find()) {
+            documentsOfFile.put(document, matchText.group());
+        }
+        else throw new Exception("problem with content of document"+ document.getDocNo());
 
     }
 
