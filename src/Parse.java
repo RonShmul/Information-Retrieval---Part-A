@@ -9,7 +9,7 @@ public class Parse {
 
     private static Map<String, String> months;
     private static HashMap terms;
-    private static HashSet<String> stopWords;
+    private HashSet<String> stopWords;
     private Document document;
     private String content;
     private Stack<String> stackOfTempTerms;
@@ -33,6 +33,7 @@ public class Parse {
     public Parse(Document document, String content) {
         this.document = document;
         this.content = content;
+        specials = new HashSet<>();
         stopWords = new HashSet<>();
         stackOfTempTerms = new Stack<>();
         months = new HashMap<String, String>();
@@ -44,7 +45,6 @@ public class Parse {
         hyphenWordsP = Pattern.compile("\\w+(-\\w+)+");
         hyphenNumbersP = Pattern.compile("\\d+(-\\d+)+");
         textTags = Pattern.compile("<(.*?)>");
-        specials = new HashSet<>();
 
         specials.add('.');
         specials.add(',');
@@ -57,8 +57,6 @@ public class Parse {
         specials.add(':');
         specials.add(';');
         specials.add('"');
-
-
 
         setMonthMap();
         setStopWords();
@@ -765,15 +763,25 @@ public class Parse {
      * @param str
      * @return String[]
      */
-    public String[] upperCaseWords(String str) {  //todo remove stop words from expressions
+    public String[] upperCaseWords(String str) {
         String s = str.toLowerCase();
+        String temp = "";
         String[] result = s.split(Pattern.quote(" "));
-        if (stopWords.contains(result[result.length - 1])) {
-            result[result.length - 1] = s.replaceAll(result[result.length - 1], "");
-        } else {
-            result = Arrays.copyOf(result, result.length + 1);
-            result[result.length - 1] = s;
+        s="";
+        for(int i=0; i<result.length; i++){
+            result[i] = cleanTerm(result[i]);
+            s=s+result[i];
+            if (i != result.length - 1)
+                s = s + " ";
+            if (!stopWords.contains(result[i])) {
+                temp = temp + result[i];
+                if (i != result.length - 1)
+                    temp = temp + " ";
+            }
         }
+        String []res = temp.split(" ");
+        result = Arrays.copyOf(res, result.length + 1);
+        result[result.length - 1] = s;
         return result;
     }
 
@@ -784,7 +792,8 @@ public class Parse {
      * @return String[]
      */
     public String[] wordsWithHyphen(String str) {
-        String s = str;
+        String s = "";
+        String temp = "";
         String[] result = str.split(Pattern.quote("-"));
         for (int i = 0; i < result.length; i++) {
             result[i] = cleanTerm(result[i]);
@@ -792,7 +801,13 @@ public class Parse {
             s = s + result[i];
             if (i != result.length - 1)
                 s = s + " ";
+            if (!stopWords.contains(result[i])) {
+                temp = temp + result[i];
+                if (i != result.length - 1)
+                    temp = temp + " ";
+            }
         }
+        String[]res = temp.split(" ");
         result = Arrays.copyOf(result, result.length + 1);
         result[result.length - 1] = s;
         return result;
@@ -840,8 +855,11 @@ public class Parse {
     public String cleanTerm(String term) {
         String temp = dotsBetweenWords(term);
         temp = removeS(temp);
-        if(temp.length()>1 && specials.contains(temp.charAt(temp.length()-1)){
+        if(temp.length()>1 && specials.contains(temp.charAt(temp.length()-1))){
             temp = temp.substring(0,temp.length()-1);
+        }
+        if(temp.length()>1 && specials.contains(temp.charAt(0))){
+            temp = temp.substring(1,temp.length());
         }
         temp = temp.replaceAll("[\\[\\](){}]|\"|:|;", "");
         return temp;
@@ -879,7 +897,7 @@ public class Parse {
         Matcher isTag = textTags.matcher((potentialTerm));
 
         String[] potentialTermsArr;
-        String nextTerm = "";
+        String nextTerm;
 
         while (stopWords.contains(potentialTerm)) {
             potentialTerm = checkIfNull(doc);
@@ -907,31 +925,31 @@ public class Parse {
         if (hyphenWordsM.matches()) {   //if its an expression with only words and hyphens
             String tempTerm = potentialTerm;
             potentialTermsArr = wordsWithHyphen(tempTerm);
-            for (int i=0;i<potentialTermsArr.length;i++){
-                potentialTermsArr[i]= cleanTerm(potentialTermsArr[i]);
-                potentialTermsArr[i].toLowerCase();
-            }
-            return potentialTermsArr;   //todo - no need to pass all the function
+            return potentialTermsArr;
         }
 
         if (numberM.find()) {    //numbers with signs
+            char first = potentialTerm.charAt(0);
             char last = potentialTerm.charAt(potentialTerm.length() - 1);
+            if(potentialTerm.length()>1 && specials.contains(first)){
+                potentialTerm = potentialTerm.substring(1,potentialTerm.length());
+            }
             if (last == '$') {
-                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
+                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
                 potentialTerm = dollar(tempTerm);
-                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                potentialTermsArr = new String[1];
                 potentialTermsArr[0] = potentialTerm;
                 return potentialTermsArr;
             }
             if (last == '%') {
-                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
+                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
                 potentialTerm = percent(tempTerm);
-                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                potentialTermsArr = new String[1];
                 potentialTermsArr[0] = potentialTerm;
                 return potentialTermsArr;
             }
-            if (last == ',') {
-                potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 2);
+            if (specials.contains(last)) {
+                potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
                 numberM = numberP.matcher(potentialTerm);
             }
         }
@@ -943,21 +961,20 @@ public class Parse {
                 if (ucNext.matches()) {     // checks dates
                     String tempNextTerm = nextTerm.toLowerCase();
                     if (months.containsKey(tempNextTerm)) {
-                        potentialTerm = potentialTerm + " " + tempNextTerm;  //if i have day + month
-
+                        potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month
                         nextTerm = checkIfNull(doc);
                         if (nextTerm != null) {
                             Matcher isYear = numberP.matcher(nextTerm);
                         if (isYear.matches()) {
                             potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
                             potentialTerm = dates(potentialTerm);
-                            potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                            potentialTermsArr = new String[1];
                             potentialTermsArr[0] = potentialTerm;
                             return potentialTermsArr;
                         } else {
                             stackOfTempTerms.push(nextTerm);   // the third term is not a year - save in stack
                             potentialTerm = dates(potentialTerm);
-                            potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                            potentialTermsArr = new String[1];
                             potentialTermsArr[0] = potentialTerm;
                             return potentialTermsArr;
                         }
@@ -981,13 +998,13 @@ public class Parse {
                 if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
                     tempNextTerm = potentialTerm + " " + tempNextTerm;
                     potentialTerm = percent(tempNextTerm);
-                    potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                    potentialTermsArr = new String[1];
                     potentialTermsArr[0] = potentialTerm;
                     return potentialTermsArr;
                 } else if (tempNextTerm.equals("dollar")) {    //checks if its a money expression
                     tempNextTerm = potentialTerm + " " + tempNextTerm;
                     potentialTerm = dollar(tempNextTerm);
-                    potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                    potentialTermsArr = new String[1];
                     potentialTermsArr[0] = potentialTerm;
                     return potentialTermsArr;
                 } else {
@@ -995,6 +1012,7 @@ public class Parse {
                 }
             }
         }     //end of checking numbers
+
         String tempPotential = cleanTerm(potentialTerm);
         Matcher wordM = wordP.matcher(tempPotential);
 
@@ -1017,20 +1035,20 @@ public class Parse {
                         nextTerm = checkIfNull(doc);
                         if (nextTerm != null) {
                             tempNextTerm = nextTerm;
-                            if (nextTerm.charAt(nextTerm.length() - 1) == ',') {
-                                tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 2);
+                            if (specials.contains(nextTerm.charAt(nextTerm.length()-1))) {
+                                tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 1);
                             }
                             nextTermIsNumber = numberP.matcher(tempNextTerm);
                             if (nextTermIsNumber.matches()) {    //if month, day and year
                                 potentialTerm = potentialTerm + " " + tempNextTerm;
                                 potentialTerm = dates(potentialTerm);
-                                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                                potentialTermsArr = new String[1];
                                 potentialTermsArr[0] = potentialTerm;
                                 return potentialTermsArr;
                             } else {  //the third term is not a year
                                 stackOfTempTerms.push(nextTerm);
                                 potentialTerm = dates(potentialTerm);
-                                potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                                potentialTermsArr = new String[1];
                                 potentialTermsArr[0] = potentialTerm;
                                 return potentialTermsArr;
                             }
@@ -1039,24 +1057,23 @@ public class Parse {
                         stackOfTempTerms.push(nextTerm);
                     }
                     potentialTerm = potentialTerm.toLowerCase();
-                    potentialTermsArr = new String[1]; //todo - no need to pass all the function
+                    potentialTermsArr = new String[1];
                     potentialTermsArr[0] = potentialTerm;
                     return potentialTermsArr;
                 }
                 } else {
-                  //  char lastNext = nextTerm.charAt(nextTerm.length()-1);
 
                     if(!(specials.contains(last))) {
                         nextTerm = checkIfNull(doc);
                         if (nextTerm != null) {
-//                            if(specials.contains(lastNext)) {
-//                                nextComma = true;
-//                            }
                             String tempNextTerm = cleanTerm(nextTerm);
                             Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
 
                             while (tempNextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
-                                char lastChar = nextTerm.charAt(nextTerm.length() - 1); //
+                                char lastChar =' ';
+                                if(nextTerm.length()>1) {
+                                    lastChar = nextTerm.charAt(nextTerm.length() - 1);
+                                }
                                 potentialTerm = potentialTerm + " " + tempNextTerm;
                                 if (specials.contains(lastChar)) {
                                     nextTerm = null;
