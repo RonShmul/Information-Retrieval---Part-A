@@ -1,7 +1,5 @@
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,45 +12,29 @@ import java.util.regex.Pattern;
 public class Main {
     public static void main(String [] args) {
 
-//        Pattern pattern = Pattern.compile("\\w+");
-//
-//        Matcher matcher1 = pattern.matcher("dsfdsf,");
-//        Matcher matcher2 = pattern.matcher("34-23423-34-");
-//
-//        if(matcher1.matches()) {
-//            System.out.println("tags are words");
-//        }
-//        if(matcher2.matches()) {
-//            System.out.println("numbers with dots and psix");
-//        }
-//        System.out.println("done");
-//        ReadFile readFile = new ReadFile();
+
+
+        //FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
+        //ReadFile fileRed = new ReadFile("corpus");
+        //File file = new File("D:\\Sivan\\studies\\corpus\\FB396001\\FB396001");
+        //System.out.println(file.getName());
+//        fileRed.readCorpus();
+//        List<Document> documents = fileRed.getDocuments();
+//        Document doc2 = documents.get(10);
 //        try {
-//            readFile.readDocs();
+//
+//            BufferedReader file = new BufferedReader(new FileReader(doc2.getPath()));
+//            file.skip(doc2.getPositionInFile());
+//            System.out.println(doc2.getDocNo());
+//            System.out.println(file.readLine());
+//            file.close();
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-
-
-
-//        Pattern dots = Pattern.compile("[A-Z]\\w*");
-//
-//        Matcher docnoMatcher = dots.matcher("Sivan");
-//        if(docnoMatcher.find()) {
-//            String docno = docnoMatcher.group();
-//            System.out.println(docno);
-//            String s = "(3fgh) 'erg: h[;rtr]' \"rt: rg\" {e;rtert}".replaceAll("[\\[\\](){}]|\"|:|;","");
-//                    //.replaceAll("[\\[\\](){}]","").replaceAll("\"","");
-//            System.out.println(s);
-//        }
-//        else4
-//            System.out.println("basa");
-
-
-        FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
-        //FileRed fileRed = new FileRed("corpus");
-
-        fileRed.readCorpus();
+        Indexer indexer = new Indexer("corpus", "harta");
+        indexer.initialize();
     }
 
 }
