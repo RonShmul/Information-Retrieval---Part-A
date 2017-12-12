@@ -1,22 +1,33 @@
-import com.sun.org.apache.xerces.internal.impl.dv.xs.StringDV;
-
 import java.io.*;
-import java.nio.file.Path;
-import java.util.Scanner;
-import java.util.regex.Pattern;
+import java.nio.CharBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by Ronshmul on 30/11/2017.
+ * Created by Sivan on 12/5/2017.
  */
-
-
 public class ReadFile {
     private static String pathStr;
-    private String currentDoc;
+    private int positionTracker;
     private File headDir;
     private File[] listOfDirs;
+    private Pattern patternDocNo;
+    private Pattern patternText;
+
+    private List<Document> documents;
+
+    public ReadFile(String path){
+        documents = new ArrayList<Document>();
+        pathStr = path;
+        headDir = new File(pathStr);
+        listOfDirs = headDir.listFiles();
+        patternDocNo = Pattern.compile("(?<=<DOCNO>)(.*?)(?=</DOCNO>)");
+        patternText = Pattern.compile("(?<=<TEXT>)(.*?)(?=</TEXT>)");
+    }
 
     public void setPathStr(String path){
         pathStr = path;
@@ -28,69 +39,79 @@ public class ReadFile {
         listOfDirs = headDir.listFiles();
     }
 
-    public String cutParts(Scanner scanner , String delimiterStart , String delimiterEnd){
 
-        scanner.useDelimiter(Pattern.compile(delimiterStart));
-        String line = null;
-//      System.out.println(line);
-        if((scanner.next())!=null) {
-            if(scanner.hasNext()) {
-                scanner.useDelimiter(Pattern.compile(delimiterEnd));
-                line = scanner.next().replace(delimiterStart, "");
-            }
-//        System.out.println(line);
+ /*   public void readCorpus() {
+        for (int i = 0; i < listOfDirs.length; i++) {
+            //get to the wanted file
+            File temp = listOfDirs[i];
+            File[] currDir = temp.listFiles();
+            File currFile = currDir[0];
+            readFile(currFile);
         }
+    }*/
 
-        return line;
+    public LinkedHashMap<Document, String> readFile(File currentFile) {
+        LinkedHashMap<Document, String> documentsOfFile = new LinkedHashMap<Document, String>();
+
+        BufferedReader bufferedReader = null;
+        try {
+            bufferedReader = new BufferedReader(new FileReader(currentFile));
+            String path = currentFile.getAbsolutePath();
+
+            StringBuilder fileString = new StringBuilder();
+
+            String temp;
+            boolean isPositionDefined = false;
+            positionTracker = 0;
+            int position = 0;
+            //the garbage at the end make the "bufferedReader.ready()" return true and the DOCNO and content are null.. should be handled
+            while ((temp = bufferedReader.readLine()) != null) {
+                if(!isPositionDefined) {
+                    position = positionTracker;
+                    isPositionDefined = true;
+                }
+
+                positionTracker += (temp.getBytes().length);
+
+                fileString.append(temp);
+                fileString.append(" ");
+
+                if (temp.length() <= 7 && temp.contains("</TEXT>")) {
+                    readDoc(fileString.toString(), position, path, documentsOfFile);
+                    fileString = new StringBuilder();
+                }
+                if(temp.length() <= 5 && temp.contains("<DOC>")) {
+                    isPositionDefined = false;
+                }
+            }
+            bufferedReader.close();
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return documentsOfFile;
+    }
+    public void readDoc(String documentText,long position, String path, LinkedHashMap<Document, String> documentsOfFile) throws Exception {
+        Matcher matchDocNo = patternDocNo.matcher(documentText);
+        Matcher matchText = patternText.matcher(documentText);
+        Document document = new Document();
+        document.setPath(path);
+        document.setPositionInFile(position);
+        if(matchDocNo.find()) {
+            document.setDocNo(matchDocNo.group());
+//            System.out.println(document.getDocNo());
+        }
+        documents.add(document);
+
+        if(matchText.find()) {
+            documentsOfFile.put(document, matchText.group());
+        }
+        else throw new Exception("problem with content of document"+ document.getDocNo());
+
     }
 
-    public void  readDocs() throws IOException {  // reads documents from each file in the list of directories
-
-//        for (int i = 0; i < listOfDirs.length; i++) {
-//            //get to the wanted file
-//            File temp = listOfDirs[i];
-//            File[] currDir = temp.listFiles();
-//            File currFile = currDir[0];
-           File currFile = new File("C:\\Users\\Ronshmul\\IdeaProjects\\Information Retrieval - Part A\\src\\ahlaDoc");
-            Scanner scanner = new Scanner(currFile);
-
-            while(scanner.hasNext()) {
-                // scanning lines in currFile and create information about the currDoc
-                Document currDoc = new Document();
-
-                //insert doc number to the currDoc
-                    currDoc.setDocNo(cutParts(scanner, "<DOCNO>", "</DOCNO>"));
-                    if(scanner.hasNext()) {
-                        System.out.println(currDoc.getDocNo());
-                        String content = cutParts(scanner, "<TEXT>", "</TEXT>");
-                        if (content != null) {
-                            System.out.println(content);
-                            Parse parser = new Parse(currDoc, content);
-                        }
-                    }
-            }
-
-           /* BufferedReader bufferedReader = new BufferedReader( new FileReader(file));
-            String s;
-            StringBuilder builder = new StringBuilder();
-            while ((s = bufferedReader.readLine()) != null) {
-                builder.append(s);
-                if(builder.toString().contains("</DOCNO>"))
-                    break;
-            }
-
-            Pattern docnoPattern = Pattern.compile("(?<=<DOCNO>)(.*?)(?=</DOCNO>)");
-            Matcher docnoMatcher = docnoPattern.matcher(builder.toString());
-            if(docnoMatcher.find()) {
-                String docno = docnoMatcher.group().replaceAll("\\s+", "");
-                System.out.println(docno);
-            }*/
-
-        }
- //   }
-
-   // }
-
-
-
+    public List<Document> getDocuments() {
+        return documents;
+    }
 }

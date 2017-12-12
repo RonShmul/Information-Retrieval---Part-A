@@ -1,38 +1,41 @@
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Created by Ronshmul on 10/12/2017.
  */
 public class MetaData {
     private int df;
-    private int frequencyInDoc;
-    private Document document;
+    private long frequencyInCorpus;
+    private HashMap<Document, Integer> frequencyInDoc;
 
-    public MetaData(int df, int frequencyInDoc, Document document) {
+    public MetaData(int df, long frequencyInCorpus, HashMap<Document, Integer> frequencyInDoc) {
         this.df = df;
+        this.frequencyInCorpus = frequencyInCorpus;
         this.frequencyInDoc = frequencyInDoc;
-        this.document = document;
     }
 
     public int getDf() {
         return df;
     }
 
+    public long getFrequencyInCorpus() {
+        return frequencyInCorpus;
+    }
+
+    public HashMap<Document, Integer> getFrequencyInDoc() {
+        return frequencyInDoc;
+    }
+
     public void setDf(int df) {
         this.df = df;
     }
 
-    public int getFrequencyInDoc() {
-        return frequencyInDoc;
+    public void setFrequencyInCorpus(long frequencyInCorpus) {
+        this.frequencyInCorpus = frequencyInCorpus;
     }
 
-    public void setFrequencyInDoc(int frequencyInDoc) {
+    public void setFrequencyInDoc(HashMap<Document, Integer> frequencyInDoc) {
         this.frequencyInDoc = frequencyInDoc;
-    }
-
-    public Document getDocument() {
-        return document;
-    }
-
-    public void setDocument(Document document) {
-        this.document = document;
     }
 }
