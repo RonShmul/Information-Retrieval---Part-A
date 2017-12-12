@@ -71,8 +71,10 @@ public class Parse {
             String str0 = parts[0];
             String str1 = parts[1];
             if (str1.length() > 2) {
-                int digit = (Integer.parseInt(str1.substring(1, 2))) + 1;
-                str = str0 + "." + Integer.parseInt(str1.substring(0, 1)) + digit;
+                try {
+                    int digit = (Integer.parseInt(str1.substring(1, 2))) + 1;
+                    str = str0 + "." + Integer.parseInt(str1.substring(0, 1)) + digit;
+                }catch(NumberFormatException ex){}
             } else
                 str = str0 + "." + str1;
         }
@@ -747,7 +749,7 @@ public class Parse {
             String result = numbers(str.substring(0, index - 1)) + " percent";
             return result;
         } else {
-            return numbers(str.substring(0, str.indexOf(" "))) + " percent";
+            return numbers(str + " percent");
         }
     }
 
@@ -880,7 +882,6 @@ public class Parse {
             //get the document text
             String docText = doc.getValue().concat(" ");
 
-
             int pos = 0;
             int index = 1;
             while(pos < docText.length()) {
@@ -893,6 +894,8 @@ public class Parse {
                         potentialTerm.equals(" ")) {
                     pos = index + 1;
                     index = docText.indexOf(" ", pos);
+                    if(pos >= docText.length())
+                        break;
                     potentialTerm = docText.substring(pos, index);
                 }
 
@@ -961,7 +964,19 @@ public class Parse {
                         else {
                             break;
                         }
+                    }
 
+                    if(first=='%'){
+                        String tempTerm = potentialTerm;
+                        potentialTerm = dollar(tempTerm);
+                        //check if term exists, if not - create one, else - update the existing one
+                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+                        if(index + 1 < docText.length()) {
+                            continue;
+                        }
+                        else {
+                            break;
+                        }
                     }
                     if (last == '%') {
                         String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
@@ -989,6 +1004,8 @@ public class Parse {
                         while(nextTerm.equals("") ||nextTerm.equals(" ") ){
                             nextPos = nextIndex + 1;
                             nextIndex = docText.indexOf(" ", nextPos);
+                            if(nextPos >= docText.length())
+                                break;
                             nextTerm = docText.substring(nextPos, nextIndex);
                         }
                         Matcher ucNext = upperCaseP.matcher(nextTerm);
@@ -1040,9 +1057,17 @@ public class Parse {
 
                     if (potentialTerm.contains(".")) {    //decimal number or ip address
                         if (potentialTerm.indexOf(".") == potentialTerm.lastIndexOf(".")) {  //there is only one dot
+                            char last = potentialTerm.charAt(potentialTerm.length()-1);
+                            if(potentialTerm.length()>1 && specials.contains(last)){
+                                potentialTerm=potentialTerm.substring(0 , potentialTerm.length()-1);
+                            }
                             potentialTerm = numbers(potentialTerm);
                         }
                     }
+                    if(potentialTerm.contains(",")){
+                        potentialTerm = numbers(potentialTerm);
+                    }
+
                     if(index + 1 < docText.length()) {
                         nextPos = index+1;
                         nextIndex = docText.indexOf(" ", nextPos);
@@ -1050,6 +1075,8 @@ public class Parse {
                         while(nextTerm.equals("") ||nextTerm.equals(" ") ){
                             nextPos = nextIndex + 1;
                             nextIndex = docText.indexOf(" ", nextPos);
+                            if(nextPos >= docText.length())
+                                break;
                             nextTerm = docText.substring(nextPos, nextIndex);
                         }
                         String tempNextTerm = nextTerm.toLowerCase();
@@ -1105,6 +1132,9 @@ public class Parse {
                                 while(nextTerm.equals("") ||nextTerm.equals(" ") ){
                                     nextPos = nextIndex + 1;
                                     nextIndex = docText.indexOf(" ", nextPos);
+                                    if(nextPos >= docText.length())
+                                        break;
+
                                     nextTerm = docText.substring(nextPos, nextIndex);
                                 }
                                 String tempNextTerm = nextTerm;
@@ -1125,7 +1155,9 @@ public class Parse {
                                         while(nextTerm.equals("") ||nextTerm.equals(" ") ){
                                             nextPos = nextIndex + 1;
                                             nextIndex = docText.indexOf(" ", nextPos);
-                                            nextTerm = docText.substring(nextPos, nextIndex);
+                                            if(index + 1 < docText.length()) {    //todo - added
+                                                nextTerm = docText.substring(nextPos, nextIndex);
+                                            }
                                         }
                                         tempNextTerm = nextTerm;
                                         if (nextTerm.length()>1 && specials.contains(nextTerm.charAt(nextTerm.length()-1))) { //todo tempNextTerm
@@ -1199,6 +1231,8 @@ public class Parse {
                                             while(nextTerm.equals("") ||nextTerm.equals(" ") ){
                                                 nextPos = nextIndex + 1;
                                                 nextIndex = docText.indexOf(" ", nextPos);
+                                                if(nextPos >= docText.length())
+                                                    break;
                                                 nextTerm = docText.substring(nextPos, nextIndex);
                                             }
                                         }
@@ -1245,6 +1279,7 @@ public class Parse {
                         }
                     } else {
                         potentialTerm = cleanTerm(potentialTerm);
+                        potentialTerm=potentialTerm.toLowerCase();
                         if(stopWords.contains(potentialTerm)){
                             continue;
                         }
@@ -1259,12 +1294,10 @@ public class Parse {
                             }
                         }
                     }
-
                 }
                 updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
 
             } // end of while
-
 
 
 
