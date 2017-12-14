@@ -12,7 +12,15 @@ import java.util.regex.Pattern;
 public class Main {
     public static void main(String [] args) {
 
-
+//        String s1 = "64:";
+//        String s2 = ":";
+//        String s3 = "55.554:";
+//        Pattern number = Pattern.compile("\\d+(,\\d+)*(.\\d+)*(th|)");
+//        Matcher num = number.matcher(s3);
+//
+//       if(num.matches()){
+//            System.out.println("success");
+//        }
 
         //FileRed fileRed = new FileRed("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus");
         //ReadFile fileRed = new ReadFile("corpus");
@@ -33,7 +41,9 @@ public class Main {
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //        }
-        Indexer indexer = new Indexer("corpus", "harta");
+
+
+        Indexer indexer = new Indexer("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus", "harta");
         indexer.initialize();
     }
 

@@ -9,8 +9,7 @@ import java.util.*;
  */
 public class Indexer {
 
-
-    private HashMap<String , List<String>> dictionary;
+    private HashMap<String , List<Integer>> dictionary;
     private String corpusPath;
     private String filesPath;
     public Indexer(String corpusPath, String filesPath) {
@@ -58,10 +57,37 @@ public class Indexer {
     private void constructPosting(LinkedHashMap<String, MetaData> termsToIndex, String fileName) {
         try {
             BufferedWriter temporaryPostingFile = new BufferedWriter(new FileWriter(filesPath + "\\" + fileName + "PostingFile"));
-
+            LinkedList<String> listToTempPosting = new LinkedList<String>();
             for( Map.Entry<String,MetaData> term : termsToIndex.entrySet()){
-                if(dictionary.get(term.getKey()) != null) {
+                if(dictionary.get(term.getKey())==null){
+                    ArrayList<Integer> fields = new ArrayList<>();
+                    dictionary.put(term.getKey(), fields);
+                    fields.add(term.getValue().getDf());
+                    fields.add(term.getValue().getFrequencyInCorpus());
+                }
+                else{
+                    dictionary.get(term.getKey()).set(0, dictionary.get(term.getKey()).get(0) + term.getValue().getDf());
+                    dictionary.get(term.getKey()).set(1, dictionary.get(term.getKey()).get(1) + term.getValue().getFrequencyInCorpus());
+                }
 
+                String toTemp = term.getKey()+":";
+                for( Map.Entry<Document,Integer> tf : term.getValue().getFrequencyInDoc().entrySet()){
+                    toTemp = toTemp.concat(tf.getKey().getDocNo() +":"+tf.getValue()+",");
+                }
+                listToTempPosting.add(toTemp);
+            }
+
+            listToTempPosting.sort(new Comparator<String>() {
+                @Override
+                public int compare(String o1, String o2) {
+                    return o1.compareTo(o2);
+                }
+            });
+            int size = listToTempPosting.size();
+            for (int i = 0; i < size; i++) {
+                temporaryPostingFile.write(listToTempPosting.get(i));
+                if(i<size-1){
+                    temporaryPostingFile.write("\n");
                 }
             }
         } catch (IOException e) {

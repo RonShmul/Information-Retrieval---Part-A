@@ -8,6 +8,7 @@ public class Document { // A class that helps us to save data on a specific docu
     private long positionInFile; //the first bit of the document - where it starts
     private int length;
     private String commonTerm;
+    private int maxTf;
 
     public Document() {
     }

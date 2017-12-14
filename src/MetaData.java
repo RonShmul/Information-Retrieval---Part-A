@@ -6,10 +6,10 @@ import java.util.Map;
  */
 public class MetaData {
     private int df;
-    private long frequencyInCorpus;
+    private int frequencyInCorpus;
     private HashMap<Document, Integer> frequencyInDoc;
 
-    public MetaData(int df, long frequencyInCorpus, HashMap<Document, Integer> frequencyInDoc) {
+    public MetaData(int df, int frequencyInCorpus, HashMap<Document, Integer> frequencyInDoc) {
         this.df = df;
         this.frequencyInCorpus = frequencyInCorpus;
         this.frequencyInDoc = frequencyInDoc;
@@ -19,7 +19,7 @@ public class MetaData {
         return df;
     }
 
-    public long getFrequencyInCorpus() {
+    public int getFrequencyInCorpus() {
         return frequencyInCorpus;
     }
 
@@ -31,7 +31,7 @@ public class MetaData {
         this.df = df;
     }
 
-    public void setFrequencyInCorpus(long frequencyInCorpus) {
+    public void setFrequencyInCorpus(int frequencyInCorpus) {
         this.frequencyInCorpus = frequencyInCorpus;
     }
 
