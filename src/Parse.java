@@ -877,460 +877,467 @@ public class Parse {
         LinkedHashMap<String, MetaData> parsedTerms = new LinkedHashMap<>();
 
         //iterate on all the documents in the file
-        for( Map.Entry<Document, String> doc : termsOfFile.entrySet()){
+        for( Map.Entry<Document, String> doc : termsOfFile.entrySet()) {
 
             //get the document text
             String docText = doc.getValue().concat(" ");
+            String[] terms = docText.split("\\W+");
 
-            int pos = 0;
-            int index = 1;
-            while(pos < docText.length()) {
-                pos = index;
-                index = docText.indexOf(" ", pos);
-                String potentialTerm = docText.substring(pos, index);
-
-                while (index + 1 < docText.length() && (stopWords.contains(potentialTerm) || potentialTerm.contains("<")
-                        || potentialTerm.contains(">") || potentialTerm.equals("--") || potentialTerm.equals("&")) || potentialTerm.equals("") ||
-                        potentialTerm.equals(" ")) {
-                    pos = index + 1;
-                    index = docText.indexOf(" ", pos);
-                    if(pos >= docText.length())
-                        break;
-                    potentialTerm = docText.substring(pos, index);
-                }
-
-                if(index + 1 >= docText.length())
-                    break;
-
-                Matcher numberM = numberP.matcher(potentialTerm);
-                Matcher hyphenWordsM = hyphenWordsP.matcher(potentialTerm);
-                Matcher hyphenNumbersM = hyphenNumbersP.matcher(potentialTerm);
-
-                if (hyphenNumbersM.matches()) {    //if its an expression with only numbers and hyphens
-                    //split the numbers to array
-                    String[] potentialTermsArr = potentialTerm.split("-");
-
-                    //iterate the array to parse it's terms
-                    for (int i=0;i<potentialTermsArr.length;i++){
-
-                        //format the numbers
-                        potentialTermsArr[i] = numbers(potentialTermsArr[i]);
-
-                        //check if term exists, if not - create one, else - update the existing one
-                        updatePotentialTerm(doc.getKey(), potentialTermsArr[i], parsedTerms);
-                    }
-                    if(index + 1 < docText.length()) {
-
-                        continue;
-                    }
-                    else{
-                        break;
-                    }
-                }
-
-                if (hyphenWordsM.matches()) {   //if its an expression with only words and hyphens
-                    String tempTerm = potentialTerm;
-                    String[] potentialTermsArr = wordsWithHyphen(tempTerm);
-                    for (int i=0;i<potentialTermsArr.length;i++){
-                        //check if term exists, if not - create one, else - update the existing one
-                            updatePotentialTerm(doc.getKey(), potentialTermsArr[i], parsedTerms);
-                    }
-                    if(index + 1 < docText.length()) {
-
-                        continue;
-                    }
-                    else {
-                        break;
-                    }
-
-                }
-
-                if (numberM.find()) {    //numbers with signs
-                    char first = potentialTerm.charAt(0);
-                    char last = potentialTerm.charAt(potentialTerm.length() - 1);
-                    if(potentialTerm.length()>1 && specials.contains(first)){
-                        potentialTerm = potentialTerm.substring(1,potentialTerm.length());
-                    }
-                    if (last == '$') {
-                        String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                        potentialTerm = dollar(tempTerm);
-                        //check if term exists, if not - create one, else - update the existing one
-                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-
-                        if(index + 1 < docText.length()) {
-
-                            continue;
-                        }
-                        else {
-                            break;
-                        }
-                    }
-
-                    if(first=='%'){
-                        String tempTerm = potentialTerm;
-                        potentialTerm = dollar(tempTerm);
-                        //check if term exists, if not - create one, else - update the existing one
-                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                        if(index + 1 < docText.length()) {
-                            continue;
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    if (last == '%') {
-                        String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                        potentialTerm = percent(tempTerm);
-                        //check if term exists, if not - create one, else - update the existing one
-                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                        if(index + 1 < docText.length()) {
-
-                            continue;
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    if (specials.contains(last)) {
-                        potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                        numberM = numberP.matcher(potentialTerm);
-                    }
-                }
-                int nextPos = index+1;
-                int nextIndex = docText.indexOf(" ", nextPos);
-                if (numberM.matches()) { //if the term is a legal number (including dots and commas)
-                    if(index + 1 < docText.length()) {
-                        String nextTerm = docText.substring(nextPos, nextIndex);
-                        while(nextTerm.equals("") ||nextTerm.equals(" ") ){
-                            nextPos = nextIndex + 1;
-                            nextIndex = docText.indexOf(" ", nextPos);
-                            if(nextPos >= docText.length())
-                                break;
-                            nextTerm = docText.substring(nextPos, nextIndex);
-                        }
-                        Matcher ucNext = upperCaseP.matcher(nextTerm);
-                        if (ucNext.matches()) {     // checks dates
-                            String tempNextTerm = nextTerm.toLowerCase();
-                            if (months.containsKey(tempNextTerm)) {
-                                potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month
-                                //update pointers:
-                                pos = nextIndex + 1;
-                                index = docText.indexOf(" ", nextPos);
-
-                                if(index + 1 < docText.length()) {
-                                    nextTerm = docText.substring(nextPos, nextIndex);  //todo - not sure
-                                    while(nextTerm.equals("") ||nextTerm.equals(" ") ){
-                                        nextPos = nextIndex + 1;
-                                        nextIndex = docText.indexOf(" ", nextPos);
-                                        nextTerm = docText.substring(nextPos, nextIndex);
-                                    }
-                                    Matcher isYear = numberP.matcher(nextTerm);
-                                    if (isYear.matches()) {
-                                        potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
-                                        pos = nextIndex + 1;
-                                        index = docText.indexOf(" ", nextPos);
-                                        potentialTerm = dates(potentialTerm);
-                                        //check if term exists, if not - create one, else - update the existing one
-                                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                                        if(index + 1 < docText.length()) {
-                                            continue;
-                                        }
-                                        else {
-                                            break;
-                                        }
-                                    } else {
-                                        // the third term is not a year - save in stack
-                                        potentialTerm = dates(potentialTerm);
-                                        //check if term exists, if not - create one, else - update the existing one
-                                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                                        if(index + 1 < docText.length()) {
-                                            continue;
-                                        }
-                                        else {
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (potentialTerm.contains(".")) {    //decimal number or ip address
-                        if (potentialTerm.indexOf(".") == potentialTerm.lastIndexOf(".")) {  //there is only one dot
-                            char last = potentialTerm.charAt(potentialTerm.length()-1);
-                            if(potentialTerm.length()>1 && specials.contains(last)){
-                                potentialTerm=potentialTerm.substring(0 , potentialTerm.length()-1);
-                            }
-                            potentialTerm = numbers(potentialTerm);
-                        }
-                    }
-                    if(potentialTerm.contains(",")){
-                        potentialTerm = numbers(potentialTerm);
-                    }
-
-                    if(index + 1 < docText.length()) {
-                        nextPos = index+1;
-                        nextIndex = docText.indexOf(" ", nextPos);
-                        String nextTerm = docText.substring(nextPos, nextIndex);
-                        while(nextTerm.equals("") ||nextTerm.equals(" ") ){
-                            nextPos = nextIndex + 1;
-                            nextIndex = docText.indexOf(" ", nextPos);
-                            if(nextPos >= docText.length())
-                                break;
-                            nextTerm = docText.substring(nextPos, nextIndex);
-                        }
-                        String tempNextTerm = nextTerm.toLowerCase();
-                        if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
-                            tempNextTerm = potentialTerm + " " + tempNextTerm;
-                            pos = nextIndex + 1;
-                            index = docText.indexOf(" ", nextPos);
-                            potentialTerm = percent(tempNextTerm);
-                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                            if(index + 1 < docText.length()) {
-                                continue;
-                            }
-                            else {
-                                break;
-                            }
-                        } else if (tempNextTerm.equals("dollar")) {    //checks if its a money expression
-                            tempNextTerm = potentialTerm + " " + tempNextTerm;
-                            pos = nextIndex + 1;
-                            index = docText.indexOf(" ", nextPos);
-                            potentialTerm = dollar(tempNextTerm);
-                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                            if(index + 1 < docText.length()) {
-                                continue;
-                            }
-                            else {
-                                break;
-                            }
-                        }
-                    }
-                    updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                    if(index + 1 < docText.length()) {
-                        continue;
-                    }
-                    else {
-                        break;
-                    }
-                }     //end of checking numbers
-
-                String tempPotential = cleanTerm(potentialTerm);
-                Matcher wordM = wordP.matcher(tempPotential);
-
-                if (wordM.matches()) {  //if the term is a word
-                    char last = potentialTerm.charAt(potentialTerm.length()-1);
-                    potentialTerm = cleanTerm(potentialTerm);
-                    Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
-                    if (upperCaseM.matches()) {
-                        String temp = potentialTerm.toLowerCase();
-                        if (months.containsKey(temp)) {   //if its a month
-                            if(index + 1 < docText.length()) {
-                                nextPos = index+1;
-                                nextIndex = docText.indexOf(" ", nextPos);
-                                String nextTerm = docText.substring(nextPos, nextIndex);
-                                while(nextTerm.equals("") ||nextTerm.equals(" ") ){
-                                    nextPos = nextIndex + 1;
-                                    nextIndex = docText.indexOf(" ", nextPos);
-                                    if(nextPos >= docText.length())
-                                        break;
-
-                                    nextTerm = docText.substring(nextPos, nextIndex);
-                                }
-                                String tempNextTerm = nextTerm;
-                                if (nextTerm.length()>1 && nextTerm.charAt(nextTerm.length() - 1) == ',') { //todo tempNextTerm
-                                    tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 2);
-                                }
-                                Matcher nextTermIsNumber = numberP.matcher(tempNextTerm);
-                                if (nextTermIsNumber.matches()) {   //if month and day
-                                    potentialTerm = potentialTerm + " " + tempNextTerm;
-                                    //update pointers:
-                                    pos = nextIndex + 1;
-                                    index = docText.indexOf(" ", nextPos);
-
-                                    if(index + 1 < docText.length()) {
-                                        nextPos = index+1;
-                                        nextIndex = docText.indexOf(" ", nextPos);
-                                        nextTerm = docText.substring(nextPos, nextIndex);
-                                        while(nextTerm.equals("") ||nextTerm.equals(" ") ){
-                                            nextPos = nextIndex + 1;
-                                            nextIndex = docText.indexOf(" ", nextPos);
-                                            if(index + 1 < docText.length()) {    //todo - added
-                                                nextTerm = docText.substring(nextPos, nextIndex);
-                                            }
-                                        }
-                                        tempNextTerm = nextTerm;
-                                        if (nextTerm.length()>1 && specials.contains(nextTerm.charAt(nextTerm.length()-1))) { //todo tempNextTerm
-                                            tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 1);
-                                        }
-                                        nextTermIsNumber = numberP.matcher(tempNextTerm);
-                                        if (nextTermIsNumber.matches()) {    //if month, day and year
-                                            potentialTerm = potentialTerm + " " + tempNextTerm;
-                                            pos = nextIndex + 1;
-                                            index = docText.indexOf(" ", nextPos);
-                                            potentialTerm = dates(potentialTerm);
-                                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                                            if(index + 1 < docText.length()) {
-                                                continue;
-                                            }
-                                            else {
-                                                break;
-                                            }
-                                        } else {  //the third term is not a year
-                                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                                            if(index + 1 < docText.length()) {
-                                                continue;
-                                            }
-                                            else {
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                potentialTerm = potentialTerm.toLowerCase();
-                                updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
-                                if(index + 1 < docText.length()) {
-                                    continue;
-                                }
-                                else {
-                                    break;
-                                }
-                            }
-                        } else {
-
-                            if(!(specials.contains(last))) {
-                                if(index + 1 < docText.length()) {
-                                    nextPos = index+1;
-                                    nextIndex = docText.indexOf(" ", nextPos);
-                                    String nextTerm = docText.substring(nextPos, nextIndex);
-                                    while(nextTerm.equals("") ||nextTerm.equals(" ") ){
-                                        nextPos = nextIndex + 1;
-                                        nextIndex = docText.indexOf(" ", nextPos);
-                                        nextTerm = docText.substring(nextPos, nextIndex);
-                                    }
-                                    String tempNextTerm = cleanTerm(nextTerm);
-                                    Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
-
-                                    while (nextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
-                                        char lastChar =' ';
-                                        if(nextTerm.length()>1) {
-                                            lastChar = nextTerm.charAt(nextTerm.length() - 1);
-                                        }
-                                        potentialTerm = potentialTerm + " " + tempNextTerm;
-                                        pos = nextIndex + 1;
-                                        index = docText.indexOf(" ", nextPos);
-                                        if (specials.contains(lastChar)) {   //todo check f it works
-                                            pos = index + 1;
-                                            index = docText.indexOf(" ", pos);
-                                            break;
-                                        }
-                                        if(index + 1 < docText.length()){
-                                            nextPos = index+1;
-                                            nextIndex = docText.indexOf(" ", nextPos);
-                                            nextTerm = docText.substring(nextPos, nextIndex);
-                                            while(nextTerm.equals("") ||nextTerm.equals(" ") ){
-                                                nextPos = nextIndex + 1;
-                                                nextIndex = docText.indexOf(" ", nextPos);
-                                                if(nextPos >= docText.length())
-                                                    break;
-                                                nextTerm = docText.substring(nextPos, nextIndex);
-                                            }
-                                        }
-                                        else nextTerm = null;
-                                        if (nextTerm != null) {
-                                            tempNextTerm = cleanTerm(nextTerm);
-                                            nextTermUC = upperCaseP.matcher(tempNextTerm);
-                                        }
-                                    }
-                                    continue;
-
-                                }
-                            }
-
-                            if (potentialTerm.contains(" ")) {
-                                String[] potentialTerms = upperCaseWords(potentialTerm);
-                                for (int i=0;i<potentialTerms.length;i++){
-                                    //check if term exists, if not - create one, else - update the existing one
-                                    updatePotentialTerm(doc.getKey(), potentialTerms[i], parsedTerms);
-                                }
-                                if(index + 1 < docText.length()) {
-                                    continue;
-                                }
-                                else {
-                                    break;
-                                }
-                            } else {
-                                potentialTerm = potentialTerm.toLowerCase();
-                                potentialTerm = cleanTerm(potentialTerm);
-                                if(stopWords.contains(potentialTerm)){
-                                    continue;
-                                }
-                                else {
-                                    updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-                                    if(index + 1 < docText.length()) {
-
-                                        continue;
-                                    }
-                                    else {
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        potentialTerm = cleanTerm(potentialTerm);
-                        potentialTerm=potentialTerm.toLowerCase();
-                        if(stopWords.contains(potentialTerm)){
-                            continue;
-                        }
-                        else {
-                            updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-                            if(index + 1 < docText.length()) {
-
-                                continue;
-                            }
-                            else {
-                                break;
-                            }
-                        }
-                    }
-                }
-                updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-
-            } // end of while
-
-
-
-        }
-
-
-
-
-
-//        String [] terms;
-//        while (doc.hasMoreTokens()) {
-//            String potentialTerm = checkIfNull(doc);
-//            if(potentialTerm != null) {
-//                terms = parseTerm(doc, potentialTerm);
-//                if(terms != null) {
-//                    for (int i = 0; i < terms.length; i++) {
-//                        System.out.println(terms[i]);
+            for(int i = 0; i < terms.length; i++) {
+                updatePotentialTerm(doc.getKey(), terms[i], parsedTerms);
+            }
+//            int pos = 0;
+//            int index = 1;
+//            while(pos < docText.length()) {
+//                pos = index;
+//                index = docText.indexOf(" ", pos);
+//                String potentialTerm = docText.substring(pos, index);
+//
+//                while (index + 1 < docText.length() && (stopWords.contains(potentialTerm) || potentialTerm.contains("<")
+//                        || potentialTerm.contains(">") || potentialTerm.equals("--") || potentialTerm.equals("&")) || potentialTerm.equals("") ||
+//                        potentialTerm.equals(" ")) {
+//                    pos = index + 1;
+//                    index = docText.indexOf(" ", pos);
+//                    if(pos >= docText.length())
+//                        break;
+//                    potentialTerm = docText.substring(pos, index);
+//                }
+//
+//                if(index + 1 >= docText.length())
+//                    break;
+//
+//                Matcher numberM = numberP.matcher(potentialTerm);
+//                Matcher hyphenWordsM = hyphenWordsP.matcher(potentialTerm);
+//                Matcher hyphenNumbersM = hyphenNumbersP.matcher(potentialTerm);
+//
+//                if (hyphenNumbersM.matches()) {    //if its an expression with only numbers and hyphens
+//                    //split the numbers to array
+//                    String[] potentialTermsArr = potentialTerm.split("-");
+//
+//                    //iterate the array to parse it's terms
+//                    for (int i=0;i<potentialTermsArr.length;i++){
+//
+//                        //format the numbers
+//                        potentialTermsArr[i] = numbers(potentialTermsArr[i]);
+//
+//                        //check if term exists, if not - create one, else - update the existing one
+//                        updatePotentialTerm(doc.getKey(), potentialTermsArr[i], parsedTerms);
+//                    }
+//                    if(index + 1 < docText.length()) {
+//
+//                        continue;
+//                    }
+//                    else{
+//                        break;
 //                    }
 //                }
-//            }
-//        }
+//
+//                if (hyphenWordsM.matches()) {   //if its an expression with only words and hyphens
+//                    String tempTerm = potentialTerm;
+//                    String[] potentialTermsArr = wordsWithHyphen(tempTerm);
+//                    for (int i=0;i<potentialTermsArr.length;i++){
+//                        //check if term exists, if not - create one, else - update the existing one
+//                            updatePotentialTerm(doc.getKey(), potentialTermsArr[i], parsedTerms);
+//                    }
+//                    if(index + 1 < docText.length()) {
+//
+//                        continue;
+//                    }
+//                    else {
+//                        break;
+//                    }
+//
+//                }
+//
+//                if (numberM.find()) {    //numbers with signs
+//                    char first = potentialTerm.charAt(0);
+//                    char last = potentialTerm.charAt(potentialTerm.length() - 1);
+//                    if(potentialTerm.length()>1 && specials.contains(first)){
+//                        potentialTerm = potentialTerm.substring(1,potentialTerm.length());
+//                    }
+//                    if (last == '$') {
+//                        String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
+//                        potentialTerm = dollar(tempTerm);
+//                        //check if term exists, if not - create one, else - update the existing one
+//                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//
+//                        if(index + 1 < docText.length()) {
+//
+//                            continue;
+//                        }
+//                        else {
+//                            break;
+//                        }
+//                    }
+//
+//                    if(first=='%'){
+//                        String tempTerm = potentialTerm;
+//                        potentialTerm = dollar(tempTerm);
+//                        //check if term exists, if not - create one, else - update the existing one
+//                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                        if(index + 1 < docText.length()) {
+//                            continue;
+//                        }
+//                        else {
+//                            break;
+//                        }
+//                    }
+//                    if (last == '%') {
+//                        String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
+//                        potentialTerm = percent(tempTerm);
+//                        //check if term exists, if not - create one, else - update the existing one
+//                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                        if(index + 1 < docText.length()) {
+//
+//                            continue;
+//                        }
+//                        else {
+//                            break;
+//                        }
+//                    }
+//                    if (specials.contains(last)) {
+//                        potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
+//                        numberM = numberP.matcher(potentialTerm);
+//                    }
+//                }
+//                int nextPos = index+1;
+//                int nextIndex = docText.indexOf(" ", nextPos);
+//                if (numberM.matches()) { //if the term is a legal number (including dots and commas)
+//                    if(index + 1 < docText.length()) {
+//                        String nextTerm = docText.substring(nextPos, nextIndex);
+//                        while(nextTerm.equals("") ||nextTerm.equals(" ") ){
+//                            nextPos = nextIndex + 1;
+//                            nextIndex = docText.indexOf(" ", nextPos);
+//                            if(nextPos >= docText.length())
+//                                break;
+//                            nextTerm = docText.substring(nextPos, nextIndex);
+//                        }
+//                        Matcher ucNext = upperCaseP.matcher(nextTerm);
+//                        if (ucNext.matches()) {     // checks dates
+//                            String tempNextTerm = nextTerm.toLowerCase();
+//                            if (months.containsKey(tempNextTerm)) {
+//                                potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month
+//                                //update pointers:
+//                                pos = nextIndex + 1;
+//                                index = docText.indexOf(" ", nextPos);
+//
+//                                if(index + 1 < docText.length()) {
+//                                    nextTerm = docText.substring(nextPos, nextIndex);  //todo - not sure
+//                                    while(nextTerm.equals("") ||nextTerm.equals(" ") ){
+//                                        nextPos = nextIndex + 1;
+//                                        nextIndex = docText.indexOf(" ", nextPos);
+//                                        nextTerm = docText.substring(nextPos, nextIndex);
+//                                    }
+//                                    Matcher isYear = numberP.matcher(nextTerm);
+//                                    if (isYear.matches()) {
+//                                        potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
+//                                        pos = nextIndex + 1;
+//                                        index = docText.indexOf(" ", nextPos);
+//                                        potentialTerm = dates(potentialTerm);
+//                                        //check if term exists, if not - create one, else - update the existing one
+//                                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                                        if(index + 1 < docText.length()) {
+//                                            continue;
+//                                        }
+//                                        else {
+//                                            break;
+//                                        }
+//                                    } else {
+//                                        // the third term is not a year - save in stack
+//                                        potentialTerm = dates(potentialTerm);
+//                                        //check if term exists, if not - create one, else - update the existing one
+//                                        updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                                        if(index + 1 < docText.length()) {
+//                                            continue;
+//                                        }
+//                                        else {
+//                                            break;
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//
+//                    if (potentialTerm.contains(".")) {    //decimal number or ip address
+//                        if (potentialTerm.indexOf(".") == potentialTerm.lastIndexOf(".")) {  //there is only one dot
+//                            char last = potentialTerm.charAt(potentialTerm.length()-1);
+//                            if(potentialTerm.length()>1 && specials.contains(last)){
+//                                potentialTerm=potentialTerm.substring(0 , potentialTerm.length()-1);
+//                            }
+//                            potentialTerm = numbers(potentialTerm);
+//                        }
+//                    }
+//                    if(potentialTerm.contains(",")){
+//                        potentialTerm = numbers(potentialTerm);
+//                    }
+//
+//                    if(index + 1 < docText.length()) {
+//                        nextPos = index+1;
+//                        nextIndex = docText.indexOf(" ", nextPos);
+//                        String nextTerm = docText.substring(nextPos, nextIndex);
+//                        while(nextTerm.equals("") ||nextTerm.equals(" ") ){
+//                            nextPos = nextIndex + 1;
+//                            nextIndex = docText.indexOf(" ", nextPos);
+//                            if(nextPos >= docText.length())
+//                                break;
+//                            nextTerm = docText.substring(nextPos, nextIndex);
+//                        }
+//                        String tempNextTerm = nextTerm.toLowerCase();
+//                        if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
+//                            tempNextTerm = potentialTerm + " " + tempNextTerm;
+//                            pos = nextIndex + 1;
+//                            index = docText.indexOf(" ", nextPos);
+//                            potentialTerm = percent(tempNextTerm);
+//                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                            if(index + 1 < docText.length()) {
+//                                continue;
+//                            }
+//                            else {
+//                                break;
+//                            }
+//                        } else if (tempNextTerm.equals("dollar")) {    //checks if its a money expression
+//                            tempNextTerm = potentialTerm + " " + tempNextTerm;
+//                            pos = nextIndex + 1;
+//                            index = docText.indexOf(" ", nextPos);
+//                            potentialTerm = dollar(tempNextTerm);
+//                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                            if(index + 1 < docText.length()) {
+//                                continue;
+//                            }
+//                            else {
+//                                break;
+//                            }
+//                        }
+//                    }
+//                    updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                    if(index + 1 < docText.length()) {
+//                        continue;
+//                    }
+//                    else {
+//                        break;
+//                    }
+//                }     //end of checking numbers
+//
+//                String tempPotential = cleanTerm(potentialTerm);
+//                Matcher wordM = wordP.matcher(tempPotential);
+//
+//                if (wordM.matches()) {  //if the term is a word
+//                    char last = potentialTerm.charAt(potentialTerm.length()-1);
+//                    potentialTerm = cleanTerm(potentialTerm);
+//                    Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
+//                    if (upperCaseM.matches()) {
+//                        String temp = potentialTerm.toLowerCase();
+//                        if (months.containsKey(temp)) {   //if its a month
+//                            if(index + 1 < docText.length()) {
+//                                nextPos = index+1;
+//                                nextIndex = docText.indexOf(" ", nextPos);
+//                                String nextTerm = docText.substring(nextPos, nextIndex);
+//                                while(nextTerm.equals("") ||nextTerm.equals(" ") ){
+//                                    nextPos = nextIndex + 1;
+//                                    nextIndex = docText.indexOf(" ", nextPos);
+//                                    if(nextPos >= docText.length())
+//                                        break;
+//
+//                                    nextTerm = docText.substring(nextPos, nextIndex);
+//                                }
+//                                String tempNextTerm = nextTerm;
+//                                if (nextTerm.length()>1 && nextTerm.charAt(nextTerm.length() - 1) == ',') { //todo tempNextTerm
+//                                    tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 2);
+//                                }
+//                                Matcher nextTermIsNumber = numberP.matcher(tempNextTerm);
+//                                if (nextTermIsNumber.matches()) {   //if month and day
+//                                    potentialTerm = potentialTerm + " " + tempNextTerm;
+//                                    //update pointers:
+//                                    pos = nextIndex + 1;
+//                                    index = docText.indexOf(" ", nextPos);
+//
+//                                    if(index + 1 < docText.length()) {
+//                                        nextPos = index+1;
+//                                        nextIndex = docText.indexOf(" ", nextPos);
+//                                        nextTerm = docText.substring(nextPos, nextIndex);
+//                                        while(nextTerm.equals("") ||nextTerm.equals(" ") ){
+//                                            nextPos = nextIndex + 1;
+//                                            nextIndex = docText.indexOf(" ", nextPos);
+//                                            if(index + 1 < docText.length()) {    //todo - added
+//                                                nextTerm = docText.substring(nextPos, nextIndex);
+//                                            }
+//                                        }
+//                                        tempNextTerm = nextTerm;
+//                                        if (nextTerm.length()>1 && specials.contains(nextTerm.charAt(nextTerm.length()-1))) { //todo tempNextTerm
+//                                            tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 1);
+//                                        }
+//                                        nextTermIsNumber = numberP.matcher(tempNextTerm);
+//                                        if (nextTermIsNumber.matches()) {    //if month, day and year
+//                                            potentialTerm = potentialTerm + " " + tempNextTerm;
+//                                            pos = nextIndex + 1;
+//                                            index = docText.indexOf(" ", nextPos);
+//                                            potentialTerm = dates(potentialTerm);
+//                                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                                            if(index + 1 < docText.length()) {
+//                                                continue;
+//                                            }
+//                                            else {
+//                                                break;
+//                                            }
+//                                        } else {  //the third term is not a year
+//                                            updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                                            if(index + 1 < docText.length()) {
+//                                                continue;
+//                                            }
+//                                            else {
+//                                                break;
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                                potentialTerm = potentialTerm.toLowerCase();
+//                                updatePotentialTerm(doc.getKey(),potentialTerm, parsedTerms);
+//                                if(index + 1 < docText.length()) {
+//                                    continue;
+//                                }
+//                                else {
+//                                    break;
+//                                }
+//                            }
+//                        } else {
+//
+//                            if(!(specials.contains(last))) {
+//                                if(index + 1 < docText.length()) {
+//                                    nextPos = index+1;
+//                                    nextIndex = docText.indexOf(" ", nextPos);
+//                                    String nextTerm = docText.substring(nextPos, nextIndex);
+//                                    while(nextTerm.equals("") ||nextTerm.equals(" ") ){
+//                                        nextPos = nextIndex + 1;
+//                                        nextIndex = docText.indexOf(" ", nextPos);
+//                                        nextTerm = docText.substring(nextPos, nextIndex);
+//                                    }
+//                                    String tempNextTerm = cleanTerm(nextTerm);
+//                                    Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
+//
+//                                    while (nextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
+//                                        char lastChar =' ';
+//                                        if(nextTerm.length()>1) {
+//                                            lastChar = nextTerm.charAt(nextTerm.length() - 1);
+//                                        }
+//                                        potentialTerm = potentialTerm + " " + tempNextTerm;
+//                                        pos = nextIndex + 1;
+//                                        index = docText.indexOf(" ", nextPos);
+//                                        if (specials.contains(lastChar)) {   //todo check f it works
+//                                            pos = index + 1;
+//                                            index = docText.indexOf(" ", pos);
+//                                            break;
+//                                        }
+//                                        if(index + 1 < docText.length()){
+//                                            nextPos = index+1;
+//                                            nextIndex = docText.indexOf(" ", nextPos);
+//                                            nextTerm = docText.substring(nextPos, nextIndex);
+//                                            while(nextTerm.equals("") ||nextTerm.equals(" ") ){
+//                                                nextPos = nextIndex + 1;
+//                                                nextIndex = docText.indexOf(" ", nextPos);
+//                                                if(nextPos >= docText.length())
+//                                                    break;
+//                                                nextTerm = docText.substring(nextPos, nextIndex);
+//                                            }
+//                                        }
+//                                        else nextTerm = null;
+//                                        if (nextTerm != null) {
+//                                            tempNextTerm = cleanTerm(nextTerm);
+//                                            nextTermUC = upperCaseP.matcher(tempNextTerm);
+//                                        }
+//                                    }
+//                                    continue;
+//
+//                                }
+//                            }
+//
+//                            if (potentialTerm.contains(" ")) {
+//                                String[] potentialTerms = upperCaseWords(potentialTerm);
+//                                for (int i=0;i<potentialTerms.length;i++){
+//                                    //check if term exists, if not - create one, else - update the existing one
+//                                    updatePotentialTerm(doc.getKey(), potentialTerms[i], parsedTerms);
+//                                }
+//                                if(index + 1 < docText.length()) {
+//                                    continue;
+//                                }
+//                                else {
+//                                    break;
+//                                }
+//                            } else {
+//                                potentialTerm = potentialTerm.toLowerCase();
+//                                potentialTerm = cleanTerm(potentialTerm);
+//                                if(stopWords.contains(potentialTerm)){
+//                                    continue;
+//                                }
+//                                else {
+//                                    updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+//                                    if(index + 1 < docText.length()) {
+//
+//                                        continue;
+//                                    }
+//                                    else {
+//                                        break;
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    } else {
+//                        potentialTerm = cleanTerm(potentialTerm);
+//                        potentialTerm=potentialTerm.toLowerCase();
+//                        if(stopWords.contains(potentialTerm)){
+//                            continue;
+//                        }
+//                        else {
+//                            updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+//                            if(index + 1 < docText.length()) {
+//
+//                                continue;
+//                            }
+//                            else {
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
+//                updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+//
+//            } // end of while
+//
+//
+//
+    }
+//
+//
+//
+//
+//
+////        String [] terms;
+////        while (doc.hasMoreTokens()) {
+////            String potentialTerm = checkIfNull(doc);
+////            if(potentialTerm != null) {
+////                terms = parseTerm(doc, potentialTerm);
+////                if(terms != null) {
+////                    for (int i = 0; i < terms.length; i++) {
+////                        System.out.println(terms[i]);
+////                    }
+////                }
+////            }
+////        }
 
         return parsedTerms;
     }
 
         public void updatePotentialTerm(Document doc, String term, LinkedHashMap<String, MetaData> map) {
-            if (map.get(term) == null) {
+
+        if (map.get(term) == null) {
                 MetaData potentialTermMetaData = new MetaData(1, 1, new HashMap<Document, Integer>());
                 potentialTermMetaData.getFrequencyInDoc().put(doc, 1);
                 map.put(term, potentialTermMetaData);
             } else {
                 //if the term already exists, get it's metaData
                 MetaData potentialTermMetaData = map.get(term);
+                int currFreqInCorpus = potentialTermMetaData.getFrequencyInCorpus();
+                potentialTermMetaData.setFrequencyInCorpus(currFreqInCorpus + 1);
 
                 //check if the current doc is already in the metaData, if so increase it's tf, if not - add the doc and increase the df
                 if(potentialTermMetaData.getFrequencyInDoc().get(doc) == null) {
@@ -1338,9 +1345,15 @@ public class Parse {
                     potentialTermMetaData.getFrequencyInDoc().put(doc, 1);
                 }
                 else {
-                    potentialTermMetaData.getFrequencyInDoc().put(doc, potentialTermMetaData.getFrequencyInDoc().get(doc)+1);
+                    int currTf = potentialTermMetaData.getFrequencyInDoc().get(doc);
+                    potentialTermMetaData.getFrequencyInDoc().put(doc, currTf+1);
+                    if(doc.getMaxTf() < currTf) {
+                        doc.setMaxTf(currTf);
+                        doc.setCommonTerm(term);
+                    }
                 }
             }
+
         }
 
 

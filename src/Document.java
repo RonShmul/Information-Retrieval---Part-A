@@ -21,6 +21,14 @@ public class Document { // A class that helps us to save data on a specific docu
         this.commonTerm = commonTerm;
     }
 
+    public int getMaxTf() {
+        return maxTf;
+    }
+
+    public void setMaxTf(int maxTf) {
+        this.maxTf = maxTf;
+    }
+
     public int getLength() {
         return length;
     }
