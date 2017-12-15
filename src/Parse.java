@@ -831,10 +831,12 @@ public class Parse {
     public String dollar(String str) {
 
         if (str.contains("$")) {
-
-            String result = numbers(str.substring(1, str.length()));
-
-            return result;
+            if(str.length() > 1) {
+                str = str.substring(1, str.length());
+                if(str.charAt(str.length()-1) =='.')
+                    str = numbers(str.substring(0, str.length()-1));
+            }
+            return str;
         } else {
             return numbers(str.substring(0, str.indexOf(" "))) + " dollar";
         }
@@ -1041,58 +1043,61 @@ public class Parse {
 
                 if (numberM.matches()) { //if the term is a legal number (including dots and commas)
                     if (nextPos != -1) {
-                        String nextTerm = docText.substring(nextPos, nextIndex);
+                        if (nextIndex != -1) {
 
-                        Matcher ucNext = upperCaseP.matcher(nextTerm);
-                        if (ucNext.matches()) {     // checks dates
-                            String tempNextTerm = nextTerm.toLowerCase();
-                            if (months.containsKey(tempNextTerm)) {
-                                potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month
+                            String nextTerm = docText.substring(nextPos, nextIndex);
 
-                                index = nextIndex;
-                                nextPos = index+1;
-                                nextIndex = docText.indexOf(" ", nextPos);
-                                nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText);
+                            Matcher ucNext = upperCaseP.matcher(nextTerm);
+                            if (ucNext.matches()) {     // checks dates
+                                String tempNextTerm = nextTerm.toLowerCase();
+                                if (months.containsKey(tempNextTerm)) {
+                                    potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month
 
-                                if (nextPos != -1) {
+                                    index = nextIndex;
+                                    nextPos = index + 1;
                                     nextIndex = docText.indexOf(" ", nextPos);
-                                    nextTerm = docText.substring(nextPos, nextIndex);
+                                    nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText);
 
-                                    Matcher isYear = numberP.matcher(nextTerm);
-                                    if (isYear.matches()) {
-                                        potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
-                                        index = nextIndex;
-                                        potentialTerm = dates(potentialTerm);
-                                        //check if term exists, if not - create one, else - update the existing one
-                                        updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-                                        pos = index + 1;
-                                        index = docText.indexOf(" ", pos);
-                                        pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                                        if (pos != -1) {
+                                    if (nextPos != -1) {
+                                        nextIndex = docText.indexOf(" ", nextPos);
+                                        nextTerm = docText.substring(nextPos, nextIndex);
+
+                                        Matcher isYear = numberP.matcher(nextTerm);
+                                        if (isYear.matches()) {
+                                            potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
+                                            index = nextIndex;
+                                            potentialTerm = dates(potentialTerm);
+                                            //check if term exists, if not - create one, else - update the existing one
+                                            updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                                            pos = index + 1;
                                             index = docText.indexOf(" ", pos);
-                                            continue;
+                                            pos = getPosToAfterWhiteSpaces(pos, index, docText);
+                                            if (pos != -1) {
+                                                index = docText.indexOf(" ", pos);
+                                                continue;
+                                            } else {
+                                                break;
+                                            }
                                         } else {
-                                            break;
-                                        }
-                                    } else {
-                                        // the third term is not a year - save in stack
-                                        potentialTerm = dates(potentialTerm);
-                                        //check if term exists, if not - create one, else - update the existing one
-                                        updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-                                        pos = index + 1;
-                                        index = docText.indexOf(" ", pos);//todo: can be null pointer exception
-                                        pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                                        if (pos != -1) {
-                                            index = docText.indexOf(" ", pos);
-                                            continue;
-                                        } else {
-                                            break;
-                                        }
-                                    }//end of else - not a year
-                                } //there is no nextPos so nothing after month
-                            }//not a month
-                        } //not uppercase
-                    } //no nextPos so nothing after the number
+                                            // the third term is not a year - save in stack
+                                            potentialTerm = dates(potentialTerm);
+                                            //check if term exists, if not - create one, else - update the existing one
+                                            updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                                            pos = index + 1;
+                                            index = docText.indexOf(" ", pos);//todo: can be null pointer exception
+                                            pos = getPosToAfterWhiteSpaces(pos, index, docText);
+                                            if (pos != -1) {
+                                                index = docText.indexOf(" ", pos);
+                                                continue;
+                                            } else {
+                                                break;
+                                            }
+                                        }//end of else - not a year
+                                    } //there is no nextPos so nothing after month
+                                }//not a month
+                            } //not uppercase
+                        }
+                    }//no nextPos so nothing after the number
 
                     if (potentialTerm.contains(".")) {    //decimal number or ip address
                         if (potentialTerm.indexOf(".") == potentialTerm.lastIndexOf(".")) {  //there is only one dot
@@ -1112,12 +1117,12 @@ public class Parse {
                         nextIndex = docText.indexOf(" ", nextPos);
                         nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText);
                         nextIndex = docText.indexOf(" ", nextPos);
-                    }
-                    else {
+                    } else {
                         nextPos = -1;
                     }
 
-                    if(nextPos != -1) {
+                    if (nextPos != -1) {
+                        if(nextIndex != -1) {
                         String nextTerm = docText.substring(nextPos, nextIndex);
 
                         String tempNextTerm = nextTerm.toLowerCase();
@@ -1153,6 +1158,7 @@ public class Parse {
                             }
                         }
                     }
+                }
                     updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
                     pos = nextIndex + 1;
                     index = docText.indexOf(" ", pos);
