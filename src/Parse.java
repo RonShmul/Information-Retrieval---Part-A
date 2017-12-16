@@ -2,25 +2,16 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Ronshmul on 28/11/2017.
- */
+
 public class Parse {
 
     private static Map<String, String> months;
-    private static HashMap terms;
     private HashSet<String> stopWords;
-    private Document document;
-    private String content;
-    private Stack<String> stackOfTempTerms;
-    private Pattern dotsP;
     private Pattern wordP;
     private Pattern numberP;
     private Pattern upperCaseP;
-    private Pattern belongsP;
     private Pattern hyphenWordsP;
     private Pattern hyphenNumbersP;
-    private Pattern textTags;
     private HashSet<Character> specials;
 
 
@@ -30,16 +21,12 @@ public class Parse {
     public Parse() {
         specials = new HashSet<>();
         stopWords = new HashSet<>();
-        stackOfTempTerms = new Stack<>();
         months = new HashMap<String, String>();
-        dotsP = Pattern.compile("(\\w\\.)+\\w");
         wordP = Pattern.compile("\\w+(,|)");
         numberP = Pattern.compile("\\d+(,\\d+)*(.\\d+)*(th|)");
         upperCaseP = Pattern.compile("[A-Z][a-z]+|[A-Z]+");
-        belongsP = Pattern.compile("\\w+\\'s");
-        hyphenWordsP = Pattern.compile("\\w+(-\\w+)+");
+        hyphenWordsP = Pattern.compile("\\w+((-)*\\w+)+");
         hyphenNumbersP = Pattern.compile("\\d+(-\\d+)+");
-        textTags = Pattern.compile("<(.*?)>");
 
         specials.add('.');
         specials.add(',');
@@ -55,8 +42,6 @@ public class Parse {
 
         setMonthMap();
         setStopWords();
-
-        terms = new HashMap();
     }
 
     /**
@@ -90,6 +75,12 @@ public class Parse {
         return str;
     }
 
+    /**
+     * get the date in the wrong format and change it to the right format
+     *
+     * @param str
+     * @return String
+     */
     public static String dates(String str) {
         str = str.toLowerCase();
         if (str.contains("th")) {
@@ -734,162 +725,12 @@ public class Parse {
     }
 
     /**
-     * function to parse number with percent to be in the format: number percent.
-     * call to the function: number to fix the decimal number.
+     * get HashMap of <Document, String> with all the documents and their content, format the words,
+     * calculate data on each term and put in in a HashMap that contains String as key and MataData as value.
      *
-     * @param str
-     * @return String
+     * @param termsOfFile
+     * @returnLinkedHashMap<String, MetaData> parsedTerms
      */
-    public String percent(String str) {
-        if (str.contains("percentage")) {
-            int index = str.indexOf("percentage");
-            String result = numbers(str.substring(0, index - 1)) + " percent";
-            return result;
-        } else if (str.contains("%")) {
-            int index = str.indexOf("%");
-            String result = numbers(str.substring(0, index - 1)) + " percent";
-            return result;
-        } else {
-            return numbers(str + " percent");
-        }
-    }
-
-
-    /**
-     * expressions like Word Word (capital letter at the beginning) will be split to: word, words and word word.
-     *
-     * @param str
-     * @return String[]
-     */
-    public String[] upperCaseWords(String str) {
-        String s = str.toLowerCase();
-        String temp = "";
-        String[] result = s.split(Pattern.quote(" "));
-        s = "";
-        for (int i = 0; i < result.length; i++) {
-            result[i] = cleanTerm(result[i]);
-            s = s + result[i];
-            if (i != result.length - 1)
-                s = s + " ";
-            if (!stopWords.contains(result[i])) {
-                temp = temp + result[i];
-                if (i != result.length - 1)
-                    temp = temp + " ";
-            }
-        }
-        String[] res = temp.split(" ");
-        result = Arrays.copyOf(res, result.length + 1);
-        result[result.length - 1] = s;
-        return result;
-    }
-
-    /**
-     * expressions like word-word will be split to: word, words and word word.
-     *
-     * @param str
-     * @return String[]
-     */
-    public String[] wordsWithHyphen(String str) {
-        String s = "";
-        String temp = "";
-        String[] result = str.split(Pattern.quote("-"));
-        for (int i = 0; i < result.length; i++) {
-            result[i] = cleanTerm(result[i]);
-            result[i].toLowerCase();
-            s = s + result[i];
-            if (i != result.length - 1)
-                s = s + " ";
-            if (!stopWords.contains(result[i])) {
-                temp = temp + result[i];
-                if (i != result.length - 1)
-                    temp = temp + " ";
-            }
-        }
-        String[] res = temp.split(" ");
-        result = Arrays.copyOf(result, result.length + 1);
-        result[result.length - 1] = s;
-        return result;
-    }
-
-    /**
-     * @param str
-     * @return String
-     */
-    String removeS(String str) {
-        if (str.length() > 2 && str.charAt(str.length() - 1) == 's' && str.charAt(str.length() - 2) == '\'') {
-            return str.substring(0, str.length() - 2);
-        }
-        return str;
-    }
-
-    /**
-     * number$ will turn to: number dollar
-     *
-     * @param str
-     * @return String
-     */
-    public String dollar(String str) {
-
-        if (str.contains("$")) {
-            if(str.length() > 1) {
-                str = str.substring(1, str.length());
-                if(str.charAt(str.length()-1) =='.')
-                    str = numbers(str.substring(0, str.length()-1));
-            }
-            return str;
-        } else {
-            return numbers(str.substring(0, str.indexOf(" "))) + " dollar";
-        }
-    }
-
-    /**
-     * turn a.b.c to abc.
-     *
-     * @param str
-     * @return String
-     */
-    public String dotsBetweenWords(String str) {
-        return str.replaceAll("\\.", "");
-
-    }
-
-    public String cleanTerm(String term) {
-        String temp = dotsBetweenWords(term);
-        temp = removeS(temp);
-        if (temp.length() > 1 && specials.contains(temp.charAt(temp.length() - 1))) {
-            temp = temp.substring(0, temp.length() - 1);
-        }
-        if (temp.length() > 1 && specials.contains(temp.charAt(0))) {
-            temp = temp.substring(1, temp.length());
-        }
-        temp = temp.replaceAll("[\\[\\](){}]|\"|:|;", "");
-        return temp;
-    }
-
-    public String checkIfNull(StringTokenizer doc) {
-        String potentialTerm = null;
-        if (stackOfTempTerms.empty()) {
-            if (doc.hasMoreTokens())
-                potentialTerm = doc.nextToken();
-        } else {
-            potentialTerm = stackOfTempTerms.pop();
-        }
-        return potentialTerm;
-    }
-    private int getPosToAfterWhiteSpaces(int pos, int index, String docText) {
-        int resPos = pos;
-        int resIndex = index;
-        while (resIndex < docText.length() && (resIndex != -1)&& (resPos == resIndex
-                || docText.substring(resPos, resIndex) == ""
-                || docText.substring(resPos, resIndex) == " ")) {
-            resPos = resIndex+1;
-            resIndex = docText.indexOf(" ", resPos);
-        }
-        if(resIndex >= docText.length() && resIndex == -1)
-            return -1;
-        return resPos;
-    }
-
     public LinkedHashMap<String, MetaData> parse(LinkedHashMap<Document, String> termsOfFile) {
         LinkedHashMap<String, MetaData> parsedTerms = new LinkedHashMap<>();
 
@@ -898,42 +739,49 @@ public class Parse {
 
             //get the document text
             String docText = doc.getValue();
-            docText+=" ";
+            docText += " ";
 //            String[] terms = docText.split("\\W+");
 //
 //            for (int i = 0; i < terms.length; i++) {
 //                updatePotentialTerm(doc.getKey(), terms[i], parsedTerms);
 //            }
+
+            //updating the pointers
             int pos = 0;
             int index = 0;
-            pos = index+1;
+            pos = getPosToAfterWhiteSpaces(pos, index, docText);
             index = docText.indexOf(" ", pos);
-            pos = getPosToAfterWhiteSpaces(pos, index,docText);
-            index = docText.indexOf(" ", pos);
-            while (pos < docText.length()) {
+
+            //the main while running on a document
+            while (pos < docText.length() && index < docText.length() && pos != -1 && index != -1) {
                 String potentialTerm = docText.substring(pos, index);
 
-                while (index + 1 < docText.length() && (stopWords.contains(potentialTerm) || potentialTerm.contains("<")
-                        || potentialTerm.contains(">") || potentialTerm.equals("--") || potentialTerm.equals("&")) || potentialTerm.equals("") ||
-                        potentialTerm.equals(" ")) {
+                //while that skip words with tags, stop words, signs and white spaces
+                while (pos != -1 && index != -1 && index + 1 < docText.length() && (stopWords.contains(potentialTerm)
+                        || potentialTerm.contains("<") || potentialTerm.contains(">") || potentialTerm.equals("--")
+                        || potentialTerm.equals("-") || potentialTerm.equals(",")|| potentialTerm.equals("*")
+                        || potentialTerm.equals(".") || potentialTerm.equals("+")
+                        || potentialTerm.equals("&")) || potentialTerm.equals("") || potentialTerm.equals(" ")) {
                     pos = index + 1;
                     index = docText.indexOf(" ", pos);
-                    if (pos >= docText.length())
-                        break;
+                    pos = getPosToAfterWhiteSpaces(pos, index, docText);
+                    index = docText.indexOf(" ", pos);
                     potentialTerm = docText.substring(pos, index);
                 }
 
-                if (index + 1 >= docText.length()) {
+                //if end of document - break from the main loop
+                if (index + 1 >= docText.length() || index == -1 || pos == -1) {
                     updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-
                     break;
                 }
-
+                //configure the matcher with the potential term
                 Matcher numberM = numberP.matcher(potentialTerm);
-                Matcher hyphenWordsM = hyphenWordsP.matcher(potentialTerm);
                 Matcher hyphenNumbersM = hyphenNumbersP.matcher(potentialTerm);
+                String tempTermHyphen = cleanTerm(potentialTerm);
+                Matcher hyphenWordsM = hyphenWordsP.matcher(tempTermHyphen);
 
-                if (hyphenNumbersM.matches()) {    //if its an expression with only numbers and hyphens
+                //if its an expression with only numbers and hyphens
+                if (hyphenNumbersM.matches()) {
                     //split the numbers to array
                     String[] potentialTermsArr = potentialTerm.split("-");
 
@@ -946,6 +794,8 @@ public class Parse {
                         //check if term exists, if not - create one, else - update the existing one
                         updatePotentialTerm(doc.getKey(), potentialTermsArr[i], parsedTerms);
                     }
+
+                    //update the pointer
                     pos = index + 1;
                     index = docText.indexOf(" ", pos);
                     pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -960,11 +810,12 @@ public class Parse {
 
                 if (hyphenWordsM.matches()) {   //if its an expression with only words and hyphens
                     String tempTerm = potentialTerm;
-                    String[] potentialTermsArr = wordsWithHyphen(tempTerm);
+                    String[] potentialTermsArr = wordsWithHyphen(cleanTerm(tempTerm));
                     for (int i = 0; i < potentialTermsArr.length; i++) {
                         //check if term exists, if not - create one, else - update the existing one
                         updatePotentialTerm(doc.getKey(), potentialTermsArr[i], parsedTerms);
                     }
+                    //update the pointers
                     pos = index + 1;
                     index = docText.indexOf(" ", pos);
                     pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -976,30 +827,12 @@ public class Parse {
                     }
                 }
 
-
-                if (numberM.find()) {    //numbers with signs
+                //checking numbers with signs
+                if (numberM.find()) {
                     char first = potentialTerm.charAt(0);
-                    char last = potentialTerm.charAt(potentialTerm.length() - 1);
                     if (potentialTerm.length() > 1 && specials.contains(first)) {
                         potentialTerm = potentialTerm.substring(1, potentialTerm.length());
                     }
-                    if (last == '$') {
-                        String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                        potentialTerm = dollar(tempTerm);
-                        //check if term exists, if not - create one, else - update the existing one
-                        updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-
-                        pos = index + 1;
-                        index = docText.indexOf(" ", pos);
-                        pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                        if (pos != -1) {
-                            index = docText.indexOf(" ", pos);
-                            continue;
-                        } else {
-                            break;
-                        }
-                    }
-
 
                     if (first == '$') {
                         String tempTerm = potentialTerm;
@@ -1016,39 +849,46 @@ public class Parse {
                             break;
                         }
                     }
-                    if (last == '%') {
-                        String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                        potentialTerm = percent(tempTerm);
-                        //check if term exists, if not - create one, else - update the existing one
-                        updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-                        pos = index + 1;
-                        index = docText.indexOf(" ", pos);
-                        pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                        if (pos != -1) {
+                    if (potentialTerm.length() > 1) {
+                        char last = potentialTerm.charAt(potentialTerm.length() - 1);
+                        if (last == '%') {
+                            String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
+                            potentialTerm = percent(tempTerm);
+                            //check if term exists, if not - create one, else - update the existing one
+                            updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                            //update pointers
+                            pos = index + 1;
                             index = docText.indexOf(" ", pos);
-                            continue;
-                        } else {
-                            break;
+                            pos = getPosToAfterWhiteSpaces(pos, index, docText);
+                            if (pos != -1) {
+                                index = docText.indexOf(" ", pos);
+                                continue;
+                            } else {
+                                break;
+                            }
+                        }
+                        if (specials.contains(last)) {
+                            potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
+                            numberM = numberP.matcher(potentialTerm);
                         }
                     }
-                    if (specials.contains(last)) {
-                        potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                        numberM = numberP.matcher(potentialTerm);
-                    }
                 }
+
+                //create indexes for next terms
                 int nextPos = index + 1;
                 int nextIndex = docText.indexOf(" ", nextPos);
                 nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText);
                 nextIndex = docText.indexOf(" ", nextPos);
 
-                if (numberM.matches()) { //if the term is a legal number (including dots and commas)
-                    if (nextPos != -1) {
-                        if (nextIndex != -1) {
-
+                //if the term is a legal number (including dots and commas)
+                if (numberM.matches()) {
+                    if (nextPos != -1 && nextIndex != -1) { // if there is next term
+                            //create next term
                             String nextTerm = docText.substring(nextPos, nextIndex);
 
+                            //check if its in a date format
                             Matcher ucNext = upperCaseP.matcher(nextTerm);
-                            if (ucNext.matches()) {     // checks dates
+                            if (ucNext.matches()) {
                                 String tempNextTerm = nextTerm.toLowerCase();
                                 if (months.containsKey(tempNextTerm)) {
                                     potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month
@@ -1061,14 +901,18 @@ public class Parse {
                                     if (nextPos != -1) {
                                         nextIndex = docText.indexOf(" ", nextPos);
                                         nextTerm = docText.substring(nextPos, nextIndex);
-
+                                        //checking if the last character is special like 1993. will be changed to 1993
+                                        if(nextTerm.length() > 1 && specials.contains(nextTerm.charAt(nextTerm.length()-1))) {
+                                            nextTerm = nextTerm.substring(0, nextTerm.length()-1);
+                                        }
                                         Matcher isYear = numberP.matcher(nextTerm);
                                         if (isYear.matches()) {
                                             potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
-                                            index = nextIndex;
                                             potentialTerm = dates(potentialTerm);
+                                            index = nextIndex;
                                             //check if term exists, if not - create one, else - update the existing one
                                             updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                                            //update pointers
                                             pos = index + 1;
                                             index = docText.indexOf(" ", pos);
                                             pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -1079,10 +923,11 @@ public class Parse {
                                                 break;
                                             }
                                         } else {
-                                            // the third term is not a year - save in stack
+                                            // the third term is not a year
                                             potentialTerm = dates(potentialTerm);
                                             //check if term exists, if not - create one, else - update the existing one
                                             updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                                            //update pointers
                                             pos = index + 1;
                                             index = docText.indexOf(" ", pos);//todo: can be null pointer exception
                                             pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -1096,8 +941,7 @@ public class Parse {
                                     } //there is no nextPos so nothing after month
                                 }//not a month
                             } //not uppercase
-                        }
-                    }//no nextPos so nothing after the number
+                        }//no nextPos so nothing after the number
 
                     if (potentialTerm.contains(".")) {    //decimal number or ip address
                         if (potentialTerm.indexOf(".") == potentialTerm.lastIndexOf(".")) {  //there is only one dot
@@ -1121,22 +965,22 @@ public class Parse {
                         nextPos = -1;
                     }
 
-                    if (nextPos != -1) {
-                        if(nextIndex != -1) {
+                    if (nextPos != -1 && nextIndex != -1) {
                         String nextTerm = docText.substring(nextPos, nextIndex);
 
-                        String tempNextTerm = nextTerm.toLowerCase();
+                        String tempNextTerm = nextTerm.toLowerCase();//todo check dots or even clean the term
                         if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
                             tempNextTerm = potentialTerm + " " + tempNextTerm;
-
                             potentialTerm = percent(tempNextTerm);
+
+                            // insert to the data structure
                             updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                            //update pointers
                             pos = nextIndex + 1;
                             index = docText.indexOf(" ", pos);
                             pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                            index = docText.indexOf(" ", pos);
-
                             if (pos != -1) {
+                                index = docText.indexOf(" ", pos);
                                 continue;
                             } else {
                                 break;
@@ -1145,27 +989,28 @@ public class Parse {
                             tempNextTerm = potentialTerm + " " + tempNextTerm;
 
                             potentialTerm = dollar(tempNextTerm);
+                            //insert to the data structure
                             updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                            //update pointers
                             pos = nextIndex + 1;
                             index = docText.indexOf(" ", pos);
                             pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                            index = docText.indexOf(" ", pos);
-
                             if (pos != -1) {
+                                index = docText.indexOf(" ", pos);
                                 continue;
-                            } else {
-                                break;
+                                } else {
+                                    break;
+                                }
                             }
-                        }
                     }
-                }
+                    //just a regular number. insert to the data structure
                     updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                    //update pointers
                     pos = nextIndex + 1;
                     index = docText.indexOf(" ", pos);
                     pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                    index = docText.indexOf(" ", pos);
-
                     if (pos != -1) {
+                        index = docText.indexOf(" ", pos);
                         continue;
                     } else {
                         break;
@@ -1175,20 +1020,22 @@ public class Parse {
                 String tempPotential = cleanTerm(potentialTerm);
                 Matcher wordM = wordP.matcher(tempPotential);
 
-                if (wordM.matches()) {  //if the term is a word
+                //if the term is a word
+                if (wordM.matches()) {
                     char last = potentialTerm.charAt(potentialTerm.length() - 1);
                     potentialTerm = cleanTerm(potentialTerm);
                     Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
                     if (upperCaseM.matches()) {
                         String temp = potentialTerm.toLowerCase();
-                        if (months.containsKey(temp)) {   //if its a month
+                        //if its a month
+                        if (months.containsKey(temp)) {
 
                             nextPos = index + 1;
                             nextIndex = docText.indexOf(" ", nextPos);
                             nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText);
-                            if(nextPos != -1) {
+                            if (nextPos != -1) {
                                 nextIndex = docText.indexOf(" ", nextPos);
-                                if(nextIndex != -1) {
+                                if (nextIndex != -1) {
                                     String nextTerm = docText.substring(nextPos, nextIndex);
 
                                     String tempNextTerm = nextTerm;
@@ -1199,15 +1046,14 @@ public class Parse {
                                     if (nextTermIsNumber.matches()) {   //if month and day
                                         potentialTerm = potentialTerm + " " + tempNextTerm;
                                         //update pointers:
-
                                         index = nextIndex;
 
                                         nextPos = index + 1;
                                         nextIndex = docText.indexOf(" ", nextPos);
                                         nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText);
+                                        nextIndex = docText.indexOf(" ", nextPos);
 
-                                        if (nextPos != -1) {
-                                            nextIndex = docText.indexOf(" ", nextPos);
+                                        if (nextPos != -1 && nextIndex != -1) {
                                             nextTerm = docText.substring(nextPos, nextIndex);
 
                                             tempNextTerm = nextTerm;
@@ -1219,8 +1065,9 @@ public class Parse {
                                                 potentialTerm = potentialTerm + " " + tempNextTerm;
                                                 index = nextIndex;
                                                 potentialTerm = dates(potentialTerm);
+                                                //insert to the data structure
                                                 updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-
+                                                //update pointers
                                                 pos = index + 1;
                                                 index = docText.indexOf(" ", pos);
                                                 pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -1231,7 +1078,9 @@ public class Parse {
                                                     break;
                                                 }
                                             } else {  //the third term is not a year
+                                                //insert to data structure month + year
                                                 updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
+                                                //update pointers
                                                 pos = index + 1;
                                                 index = docText.indexOf(" ", pos);
                                                 pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -1241,11 +1090,12 @@ public class Parse {
                                                 } else {
                                                     break;
                                                 }
-                                            }
-                                        }
-                                    }
-                                }
+                                            } //end of else - no year
+                                        } // there is nothing after the day
+                                    } // there is no day after month
+                                } // there is nothing after month
                                 potentialTerm = potentialTerm.toLowerCase();
+                                //insert the month to the data structure
                                 updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
                                 pos = index + 1;
                                 index = docText.indexOf(" ", pos);
@@ -1256,58 +1106,61 @@ public class Parse {
                                 } else {
                                     break;
                                 }
-                            }
-                        } else {
+                            } //nothing after month
+                        } else { //the word is not a month
 
                             if (!(specials.contains(last))) {
                                 nextPos = index + 1;
                                 nextIndex = docText.indexOf(" ", nextPos);
                                 nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText);
+                                nextIndex = docText.indexOf(" ", nextPos);
 
-                                if(nextPos != -1) {
-                                    nextIndex = docText.indexOf(" ", nextPos);
+                                if (nextPos != -1 && nextIndex != -1) {
                                     String nextTerm = docText.substring(nextPos, nextIndex);
                                     String tempNextTerm = cleanTerm(nextTerm);
                                     Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
 
-                                    while (nextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
+                                    while (nextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm.toLowerCase()))) {//todo toLowerCase? I added..ron?
+                                        //take the last char of the next term to check after that if the next term is at the end of a sentance.
                                         char lastChar = ' ';
                                         if (nextTerm.length() > 1) {
                                             lastChar = nextTerm.charAt(nextTerm.length() - 1);
                                         }
+                                        //concat the next term because it's also uppercase
                                         potentialTerm = potentialTerm + " " + tempNextTerm;
                                         index = nextIndex;
                                         if (specials.contains(lastChar)) {   //todo check f it works
+                                            //change the pointers to be after the nextTerm (the last nextTerm to concat to the potential term)
                                             pos = index + 1;
                                             index = docText.indexOf(" ", pos);
                                             pos = getPosToAfterWhiteSpaces(pos, index, docText);
-                                            if(pos != -1)
-                                                index = docText.indexOf(" ", pos);
+                                            index = docText.indexOf(" ", pos);
                                             break;
                                         }
-
+                                        //get the next term
                                         nextPos = index + 1;
                                         nextIndex = docText.indexOf(" ", nextPos);
-                                        if((nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText)) != -1) {
+                                        if ((nextPos = getPosToAfterWhiteSpaces(nextPos, nextIndex, docText)) != -1) {//there is a next term
                                             nextIndex = docText.indexOf(" ", nextPos);
                                             nextTerm = docText.substring(nextPos, nextIndex);
 
-                                        } else nextTerm = null;
+                                        } else nextTerm = null;//there is no next term
                                         if (nextTerm != null) {
                                             tempNextTerm = cleanTerm(nextTerm);
                                             nextTermUC = upperCaseP.matcher(tempNextTerm);
                                         }
                                     }// and of while
-                                }
-                            }
+                                }//there is no next term
+                            }//there is a special character after the potential term
 
                             if (potentialTerm.contains(" ")) {
                                 String[] potentialTerms = upperCaseWords(potentialTerm);
                                 for (int i = 0; i < potentialTerms.length; i++) {
-                                    //check if term exists, if not - create one, else - update the existing one
+                                    //insert to data structure each cell in the array
                                     updatePotentialTerm(doc.getKey(), potentialTerms[i], parsedTerms);
 
                                 }
+                                //update the pointers
                                 pos = index + 1;
                                 index = docText.indexOf(" ", pos);
                                 pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -1318,9 +1171,10 @@ public class Parse {
                                     break;
                                 }
 
-                            } else {
+                            } else {// potentialTerm is only one word
                                 potentialTerm = potentialTerm.toLowerCase();
                                 potentialTerm = cleanTerm(potentialTerm);
+                                // if this word is stop word. skip it and continue (update the pointers)
                                 if (stopWords.contains(potentialTerm)) {
                                     pos = index + 1;
                                     index = docText.indexOf(" ", pos);
@@ -1374,8 +1228,7 @@ public class Parse {
                     } //end of else - not an uppercase
                 } //end of if its a word
                 updatePotentialTerm(doc.getKey(), potentialTerm, parsedTerms);
-                if(index == 2000)
-                    System.out.println("gaga");
+
                 pos = index + 1;
                 index = docText.indexOf(" ", pos);
                 pos = getPosToAfterWhiteSpaces(pos, index, docText);
@@ -1385,32 +1238,42 @@ public class Parse {
                 } else {
                     break;
                 }
-
             } // end of while
-
-
         }
-//
-//
-//
-//
-//
-//        String [] terms;
-//        while (doc.hasMoreTokens()) {
-//            String potentialTerm = checkIfNull(doc);
-//            if(potentialTerm != null) {
-//                terms = parseTerm(doc, potentialTerm);
-//                if(terms != null) {
-//                    for (int i = 0; i < terms.length; i++) {
-//                        System.out.println(terms[i]);
-//                    }
-//                }
-//            }
-//        }
-
         return parsedTerms;
     }
 
+    /**
+     * get a position indexes and a document text and move the indexes to be atan actual term and not a whitespace.
+     * returns the pos index (first index at the begining of the word.) if its end of document - returns -1
+     *
+     * @param pos
+     * @param index
+     * @param docText
+     * @return int
+     */
+    private int getPosToAfterWhiteSpaces(int pos, int index, String docText) {
+        int resPos = pos;
+        int resIndex = index;
+        while (resIndex < docText.length() && (resIndex != -1) && (resPos == resIndex
+                || docText.substring(resPos, resIndex) == ""
+                || docText.substring(resPos, resIndex) == " ")) {
+            resPos = resIndex + 1;
+            resIndex = docText.indexOf(" ", resPos);
+        }
+        if (resIndex >= docText.length() || resIndex == -1)
+            return -1;
+        return resPos;
+    }
+
+    /**
+     * get the potential term and add it to the parsed terms hashMap.
+     * The hashMap contains String as a key and metaData as the value.
+     *
+     * @param doc
+     * @param term
+     * @param map
+     */
     public void updatePotentialTerm(Document doc, String term, LinkedHashMap<String, MetaData> map) {
 
         if (map.get(term) == null) {
@@ -1439,232 +1302,146 @@ public class Parse {
 
     }
 
-
-   /* public String[] parseTerm(StringTokenizer doc, String potentialTerm) {
-        StringTokenizer ff = new StringTokenizer(doc.toString(), ". ");
-        Matcher isTag = textTags.matcher((potentialTerm));
-
-        String[] potentialTermsArr;
-        String nextTerm;
-
-        while (stopWords.contains(potentialTerm)) {
-            potentialTerm = checkIfNull(doc);
+    /**
+     * function to parse number with percent to be in the format: number percent.
+     * call to the function: number to fix the decimal number.
+     *
+     * @param str
+     * @return String
+     */
+    public String percent(String str) {
+        if (str.contains("percentage")) {
+            int index = str.indexOf("percentage");
+            String result = numbers(str.substring(0, index - 1)) + " percent";
+            return result;
+        } else if (str.contains("%")) {
+            int index = str.indexOf("%");
+            String result = numbers(str.substring(0, index - 1)) + " percent";
+            return result;
+        } else {
+            str = str.substring(0, str.indexOf(" "));
+            return numbers(str)+ " percent";
         }
+    }
 
-        if (isTag.matches()) {
-            potentialTerm = checkIfNull(doc);
-        }
 
-        Matcher numberM = numberP.matcher(potentialTerm);
-        Matcher hyphenWordsM = hyphenWordsP.matcher(potentialTerm);
-        Matcher hyphenNumbersM = hyphenNumbersP.matcher(potentialTerm);
-
-        if (hyphenNumbersM.matches()) {    //if its an expression with only numbers and hyphens
-            String tempTerm = potentialTerm;
-            if(specials.contains(potentialTerm.charAt(potentialTerm.length() - 1))){
-                tempTerm = potentialTerm.substring(0,potentialTerm.length()-1);
-            }
-            potentialTermsArr = tempTerm.split("-");
-            for (int i=0;i<potentialTermsArr.length;i++){
-                potentialTermsArr[i] = numbers(potentialTermsArr[i]);
-            }
-            return potentialTermsArr;
-        }
-        if (hyphenWordsM.matches()) {   //if its an expression with only words and hyphens
-            String tempTerm = potentialTerm;
-            potentialTermsArr = wordsWithHyphen(tempTerm);
-            return potentialTermsArr;
-        }
-
-        if (numberM.find()) {    //numbers with signs
-            char first = potentialTerm.charAt(0);
-            char last = potentialTerm.charAt(potentialTerm.length() - 1);
-            if(potentialTerm.length()>1 && specials.contains(first)){
-                potentialTerm = potentialTerm.substring(1,potentialTerm.length());
-            }
-            if (last == '$') {
-                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                potentialTerm = dollar(tempTerm);
-                potentialTermsArr = new String[1];
-                potentialTermsArr[0] = potentialTerm;
-                return potentialTermsArr;
-            }
-            if (last == '%') {
-                String tempTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                potentialTerm = percent(tempTerm);
-                potentialTermsArr = new String[1];
-                potentialTermsArr[0] = potentialTerm;
-                return potentialTermsArr;
-            }
-            if (specials.contains(last)) {
-                potentialTerm = potentialTerm.substring(0, potentialTerm.length() - 1);
-                numberM = numberP.matcher(potentialTerm);
+    /**
+     * expressions like Word Word (capital letter at the beginning) will be split to: word, words and word word.
+     *
+     * @param str
+     * @return String[]
+     */
+    public String[] upperCaseWords(String str) {
+        String s = str.toLowerCase();
+        String temp = "";
+        String[] result = s.split(Pattern.quote(" "));
+        s = "";
+        for (int i = 0; i < result.length; i++) {
+            result[i] = cleanTerm(result[i]);
+            s = s + result[i];
+            if (i != result.length - 1)
+                s = s + " ";
+            if (!stopWords.contains(result[i])) {
+                temp = temp + result[i];
+                if (i != result.length - 1)
+                    temp = temp + " ";
             }
         }
+        String[] res = temp.split(" ");
+        result = Arrays.copyOf(res, result.length + 1);
+        result[result.length - 1] = s;
+        return result;
+    }
 
-        if (numberM.matches()) { //if the term is a legal number (including dots and commas)
-            nextTerm = checkIfNull(doc);
-            if(nextTerm != null) {
-                Matcher ucNext = upperCaseP.matcher(nextTerm);
-                if (ucNext.matches()) {     // checks dates
-                    String tempNextTerm = nextTerm.toLowerCase();
-                    if (months.containsKey(tempNextTerm)) {
-                        potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month
-                        nextTerm = checkIfNull(doc);
-                        if (nextTerm != null) {
-                            Matcher isYear = numberP.matcher(nextTerm);
-                            if (isYear.matches()) {
-                                potentialTerm = potentialTerm + " " + nextTerm;  //if i have day + month + year
-                                potentialTerm = dates(potentialTerm);
-                                potentialTermsArr = new String[1];
-                                potentialTermsArr[0] = potentialTerm;
-                                return potentialTermsArr;
-                            } else {
-                                stackOfTempTerms.push(nextTerm);   // the third term is not a year - save in stack
-                                potentialTerm = dates(potentialTerm);
-                                potentialTermsArr = new String[1];
-                                potentialTermsArr[0] = potentialTerm;
-                                return potentialTermsArr;
-                            }
-                        }
-                    } else {
-                        stackOfTempTerms.push(nextTerm);   //the second term is not a month - save in stack
-                    }
-                } else {
-                    stackOfTempTerms.push(nextTerm);    //the second term is not upper case - save in stack
-                }
-            }
-
-            if (potentialTerm.contains(".")) {    //decimal number or ip address
-                if (potentialTerm.indexOf(".") == potentialTerm.lastIndexOf(".")) {  //there is only one dot
-                    potentialTerm = numbers(potentialTerm);
-                }
-            }
-            nextTerm = checkIfNull(doc);
-            if(nextTerm != null) {
-                String tempNextTerm = nextTerm.toLowerCase();
-                if (tempNextTerm.equals("percent") || tempNextTerm.equals("percentage")) {   //checks if its a percent expression
-                    tempNextTerm = potentialTerm + " " + tempNextTerm;
-                    potentialTerm = percent(tempNextTerm);
-                    potentialTermsArr = new String[1];
-                    potentialTermsArr[0] = potentialTerm;
-                    return potentialTermsArr;
-                } else if (tempNextTerm.equals("dollar")) {    //checks if its a money expression
-                    tempNextTerm = potentialTerm + " " + tempNextTerm;
-                    potentialTerm = dollar(tempNextTerm);
-                    potentialTermsArr = new String[1];
-                    potentialTermsArr[0] = potentialTerm;
-                    return potentialTermsArr;
-                } else {
-                    stackOfTempTerms.push(nextTerm);   //if its not a percent or money
-                }
-            }
-        }     //end of checking numbers
-
-/////////////todo here
-        String tempPotential = cleanTerm(potentialTerm);
-        Matcher wordM = wordP.matcher(tempPotential);
-
-        if (wordM.matches()) {  //if the term is a word
-            char last = potentialTerm.charAt(potentialTerm.length()-1);
-            potentialTerm = cleanTerm(potentialTerm);
-            Matcher upperCaseM = upperCaseP.matcher(potentialTerm);
-            if (upperCaseM.matches()) {
-                String temp = potentialTerm.toLowerCase();
-                if (months.containsKey(temp)) {   //if its a month
-                    nextTerm = checkIfNull(doc);
-                    if(nextTerm!=null){
-                    String tempNextTerm = nextTerm;
-                    if (nextTerm.charAt(nextTerm.length() - 1) == ',') {
-                        tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 2);
-                    }
-                    Matcher nextTermIsNumber = numberP.matcher(tempNextTerm);
-                    if (nextTermIsNumber.matches()) {   //if month and day
-                        potentialTerm = potentialTerm + " " + tempNextTerm;
-                        nextTerm = checkIfNull(doc);
-                        if (nextTerm != null) {
-                            tempNextTerm = nextTerm;
-                            if (specials.contains(nextTerm.charAt(nextTerm.length()-1))) {
-                                tempNextTerm = tempNextTerm.substring(0, tempNextTerm.length() - 1);
-                            }
-                            nextTermIsNumber = numberP.matcher(tempNextTerm);
-                            if (nextTermIsNumber.matches()) {    //if month, day and year
-                                potentialTerm = potentialTerm + " " + tempNextTerm;
-                                potentialTerm = dates(potentialTerm);
-                                potentialTermsArr = new String[1];
-                                potentialTermsArr[0] = potentialTerm;
-                                return potentialTermsArr;
-                            } else {  //the third term is not a year
-                                stackOfTempTerms.push(nextTerm);
-                                potentialTerm = dates(potentialTerm);
-                                potentialTermsArr = new String[1];
-                                potentialTermsArr[0] = potentialTerm;
-                                return potentialTermsArr;
-                            }
-                        }
-                    } else {   //the second term is not a day
-                        stackOfTempTerms.push(nextTerm);
-                    }
-                    potentialTerm = potentialTerm.toLowerCase();
-                    potentialTermsArr = new String[1];
-                    potentialTermsArr[0] = potentialTerm;
-                    return potentialTermsArr;
-                }
-                } else {
-
-                    if(!(specials.contains(last))) {
-                        nextTerm = checkIfNull(doc);
-                        if (nextTerm != null) {
-                            String tempNextTerm = cleanTerm(nextTerm);
-                            Matcher nextTermUC = upperCaseP.matcher(tempNextTerm);
-
-                            while (tempNextTerm != null && (nextTermUC.matches() || stopWords.contains(tempNextTerm))) {
-                                char lastChar =' ';
-                                if(nextTerm.length()>1) {
-                                    lastChar = nextTerm.charAt(nextTerm.length() - 1);
-                                }
-                                potentialTerm = potentialTerm + " " + tempNextTerm;
-                                if (specials.contains(lastChar)) {
-                                    nextTerm = null;
-                                    break;
-                                }
-                                nextTerm = checkIfNull(doc);
-                                if (nextTerm != null) {
-                                    tempNextTerm = cleanTerm(nextTerm);
-                                    nextTermUC = upperCaseP.matcher(tempNextTerm);
-                                }
-                            }
-                            if (nextTerm != null) {
-                                stackOfTempTerms.push(nextTerm);
-                            }
-                        }
-                    }
-
-                    if (potentialTerm.contains(" ")) {
-                        String[] potentialTerms = upperCaseWords(potentialTerm);  //todo - no need to pass all the function
-                        return potentialTerms;
-                    } else {
-                        potentialTerm = potentialTerm.toLowerCase();
-                        potentialTerm = cleanTerm(potentialTerm);
-                        if(stopWords.contains(potentialTerm)){
-                            potentialTerm = null;
-                        }
-                        if (potentialTerm!=null) {
-                            potentialTermsArr = new String[1]; //todo - no need to pass all the function
-                            potentialTermsArr[0] = potentialTerm;
-                            return potentialTermsArr;
-                        }
-                    }
-                }
+    /**
+     * expressions like word-word will be split to: word, words and word word.
+     *
+     * @param str
+     * @return String[]
+     */
+    public String[] wordsWithHyphen(String str) {
+        String s = "";
+        String temp = "";
+        String[] result = str.split(Pattern.quote("-"));
+        for (int i = 0; i < result.length; i++) {
+            if(result[i].equals(""))
+                continue;
+            result[i] = cleanTerm(result[i]);
+            result[i].toLowerCase();
+            s = s + result[i];
+            if (i != result.length - 1)
+                s = s + " ";
+            if (!stopWords.contains(result[i])) {
+                temp = temp + result[i];
+                if (i != result.length - 1)
+                    temp = temp + " ";
             }
         }
-        if(potentialTerm!=null) {
-            potentialTermsArr = new String[1]; //todo - no need to pass all the function
-            potentialTermsArr[0] = potentialTerm;
-            return potentialTermsArr;
+        String[] res = temp.split(" ");
+        result = Arrays.copyOf(result, result.length + 1);
+        result[result.length - 1] = s;
+        return result;
+    }
+
+    /**
+     * @param str
+     * @return String
+     */
+    String removeS(String str) {
+        if (str.length() > 2 && str.charAt(str.length() - 1) == 's' && str.charAt(str.length() - 2) == '\'') {
+            return str.substring(0, str.length() - 2);
         }
-        else return null;
-    }*/
+        return str;
+    }
+
+    /**
+     * number$ will turn to: number dollar
+     *
+     * @param str
+     * @return String
+     */
+    public String dollar(String str) {
+
+        if (str.contains("$")) {
+            if (str.length() > 1) {
+                str = str.substring(1, str.length());
+                if (str.charAt(str.length() - 1) == '.')
+                    str = numbers(str.substring(0, str.length() - 1));
+            }
+            return str;
+        } else {
+            return numbers(str.substring(0, str.indexOf(" "))) + " dollar";
+        }
+    }
+
+    /**
+     * turn a.b.c to abc.
+     *
+     * @param str
+     * @return String
+     */
+    public String dotsBetweenWords(String str) {
+        return str.replaceAll("\\.", "");
+
+    }
+
+    /**
+     * get string with dots, brackets, etc and clean it from everything but letters or numbers.
+     *
+     * @param term
+     * @return
+     */
+    public String cleanTerm(String term) {
+        String temp = dotsBetweenWords(term);
+        temp = removeS(temp);
+        if (temp.length() > 1 && specials.contains(temp.charAt(temp.length() - 1))) {
+            temp = temp.substring(0, temp.length() - 1);
+        }
+        if (temp.length() > 1 && specials.contains(temp.charAt(0))) {
+            temp = temp.substring(1, temp.length());
+        }
+        temp = temp.replaceAll("[\\[\\](){}]|\"|:|;", "");
+        return temp;
+    }
 
 }
-
