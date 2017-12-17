@@ -15,6 +15,12 @@ public class MetaData {
         this.frequencyInDoc = frequencyInDoc;
     }
 
+    public MetaData() {
+        this.df = 1;
+        this.frequencyInCorpus = 1;
+        this.frequencyInDoc = new HashMap<>();
+    }
+
     public int getDf() {
         return df;
     }

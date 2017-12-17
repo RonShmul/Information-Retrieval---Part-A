@@ -1,7 +1,9 @@
+import java.io.Serializable;
+
 /**
  * Created by Ronshmul on 30/11/2017.
  */
-public class Document { // A class that helps us to save data on a specific documents besides the content
+public class Document implements Serializable{ // A class that helps us to save data on a specific documents besides the content
 
     private String path;
     private String docNo;

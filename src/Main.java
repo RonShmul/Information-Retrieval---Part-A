@@ -43,9 +43,11 @@ public class Main {
 //        }
 
 
-        Indexer indexer = new Indexer("C:\\Users\\Ronshmul\\Desktop\\corpus\\corpus", "harta");
+        Indexer indexer = new Indexer("corpus", "C:\\Users\\Sivan\\Desktop\\postingFiles");
         indexer.initialize();
+
+    }
     }
 
-}
+
 
