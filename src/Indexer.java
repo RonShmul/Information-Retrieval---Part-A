@@ -31,15 +31,12 @@ public class Indexer {
         ReadFile corpus = new ReadFile(corpusPath);
 
         //iterate on all the files in the corpus
-        for (int i = 0; i < listOfDirs.length; i++) {
+        for (int i = 0; i < 100                   /*listOfDirs.length */   ; i++) {
             counterForFiles = i;
             //get to the wanted file
             File temp = listOfDirs[i];
             File[] currDir = temp.listFiles();
             File currFile = currDir[0];
-
-            //get the name of the file
-            String path = currFile.getName();
 
             //create a new parse
             Parse parse = new Parse();
@@ -47,13 +44,13 @@ public class Indexer {
             //get all the parsed terms of a specific file
             LinkedHashMap<String, MetaData> termsToIndex = parse.parse(corpus.readFile(currFile));
 
-
 //            for( Map.Entry<String,MetaData> term : termsToIndex.entrySet()){
 //                System.out.println(term.getKey());
 //            }
             //send to a method that construct the indexing
-            //constructPosting(termsToIndex, path);
+            constructPosting(termsToIndex);
         }
+        mergePosting();
     }
 
     private void constructPosting(LinkedHashMap<String, MetaData> termsToIndex) {
@@ -91,17 +88,19 @@ public class Indexer {
                     temporaryPostingFile.write("\n");
                 }
             }
+            temporaryPostingFile.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void mergePosting(String fileName) {   // merging the temporary posting files - two in each iteration
+    public void mergePosting() {   // merging the temporary posting files - two in each iteration
         try {
 
             int count = 0;
-            while (counterForFiles > 2) {  //we will merge the last two files in separate - to the final posting files
-                if (counterForFiles % 2 != 0) {  //if the number of files is odd - we will merge the last two files for even number of files to merge
+            int realCounter = counterForFiles+1;
+            while (realCounter > 2) {  //we will merge the last two files in separate - to the final posting files
+                if (realCounter % 2 != 0) {  //if the number of files is odd - we will merge the last two files for even number of files to merge
                     File fileF = new File(filesPath + "\\" + counterForFiles);
                     File fileS = new File(filesPath + "\\" + (counterForFiles - 1));
                     File temp = new File(filesPath + "\\" + "temporaryFile");
@@ -114,9 +113,14 @@ public class Indexer {
                     File newFile = new File(filesPath + "\\" + (counterForFiles - 1));
                     temp.renameTo(newFile);
                     counterForFiles--;
+                    realCounter--;
+
+                    readFirst.close();
+                    readSecond.close();
+                    writeToFile.close();
                 }
 
-                for (int i = 0; counterForFiles > 2 && i < counterForFiles; i = i + 2) {
+                for (int i = 0; realCounter > 2 && i < realCounter; i = i + 2) {
                     File fileF = new File(filesPath + "\\" + i);
                     File fileS = new File(filesPath + "\\" + (i + 1));
                     File temp = new File(filesPath + "\\" + "temporaryFile");
@@ -130,7 +134,8 @@ public class Indexer {
                     temp.renameTo(newFile);
                     count++;
                 }
-                counterForFiles = counterForFiles / 2;
+                counterForFiles = counterForFiles/2;
+                realCounter = realCounter/2;
                 count =0;
             }
 
@@ -143,32 +148,201 @@ public class Indexer {
     }
 
     private void finalPosting() {
+        String ae = "abcde";
+        String fj ="fghij";
+        String ko = "klmno";
+        String pt = "pqrst";
+        String uz = "uvwxyz";
+
         try {
             BufferedReader readFirst = new BufferedReader(new FileReader(new File(filesPath + "\\" + "0")));
             BufferedReader readSecond = new BufferedReader(new FileReader(filesPath + "\\" + "1"));
             BufferedWriter writeToFile = new BufferedWriter(new FileWriter(new File(filesPath + "\\" + "finalNumbers")));
             String fLine = readFirst.readLine();
             String sLine = readSecond.readLine();
-            while (fLine != null && sLine != null) {
-                while (!(Character.isLetter(fLine.charAt(0))) && !(Character.isLetter(sLine.charAt(0)))) {
-                    String fTerm = fLine.substring(0, fLine.indexOf(":", 0));
-                    String sTerm = fLine.substring(0, fLine.indexOf(":", 0));
-                    if (fTerm.compareTo(sTerm) == 1) {  //if the second term is smaller than the first term - we will write the second to the file
-                        writeToFile.write(sLine);
-                        sLine = readSecond.readLine();
-                    } else if (fTerm.compareTo(sTerm) == -1) {  // if the first term is smaller than the second
-                        writeToFile.write(fLine);
-                        fLine = readFirst.readLine();
-                    } else {    //if its the same term - we need to merge between the information
-                        sLine = sLine.substring(sLine.indexOf(":") + 1, sLine.length() - 1);
-                        fLine = fLine.concat(sLine);
-                        fLine = fLine.concat("\n");
-                        writeToFile.write(fLine);
-                        fLine = readFirst.readLine();
-                        sLine = readSecond.readLine();
-                    }
+            while(fLine!=null && sLine!= null &&!(Character.isLetter(fLine.charAt(0))) && !(Character.isLetter(sLine.charAt(0)))){ //the first posting is for anything but letters
+                String fTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                String sTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                if (fTerm.compareTo(sTerm) == 1) {
+                    writeToFile.write(sLine);
+                    sLine = readSecond.readLine();
+                } else if (fTerm.compareTo(sTerm) == -1) {
+                    writeToFile.write(fLine);
+                    fLine = readFirst.readLine();
+                } else {
+                    sLine = sLine.substring(sLine.indexOf(":") + 1, sLine.length() - 1);
+                    fLine = fLine.concat(sLine);
+                    fLine = fLine.concat("\n");
+                    writeToFile.write(fLine);
+                    fLine = readFirst.readLine();
+                    sLine = readSecond.readLine();
                 }
             }
+            while(sLine!=null && !(Character.isLetter(sLine.charAt(0)))){
+                writeToFile.write(sLine);
+                sLine = readSecond.readLine();
+            }
+            while(fLine!=null && !(Character.isLetter(fLine.charAt(0)))){
+                writeToFile.write(fLine);
+                fLine = readSecond.readLine();
+            }
+
+            writeToFile.close();  //todo not sure
+            BufferedWriter writeToA = new BufferedWriter(new FileWriter(new File(filesPath + "\\" + "A-E")));
+
+            while(fLine!=null && sLine!= null && ae.contains(fLine.substring(0,1)) && ae.contains((sLine.substring(0,1)))){
+                String fTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                String sTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                if (fTerm.compareTo(sTerm) == 1) {
+                    writeToA.write(sLine);
+                    sLine = readSecond.readLine();
+                } else if (fTerm.compareTo(sTerm) == -1) {
+                    writeToA.write(fLine);
+                    fLine = readFirst.readLine();
+                } else {
+                    sLine = sLine.substring(sLine.indexOf(":") + 1, sLine.length() - 1);
+                    fLine = fLine.concat(sLine);
+                    fLine = fLine.concat("\n");
+                    writeToA.write(fLine);
+                    fLine = readFirst.readLine();
+                    sLine = readSecond.readLine();
+                }
+            }
+            while(sLine!=null && ae.contains((sLine.substring(0,1)))){
+                writeToA.write(sLine);
+                sLine = readSecond.readLine();
+            }
+            while(fLine!=null && ae.contains((fLine.substring(0,1)))){
+                writeToA.write(fLine);
+                fLine = readSecond.readLine();
+            }
+            writeToA.close();  //todo not sure
+            BufferedWriter writeToF = new BufferedWriter(new FileWriter(new File(filesPath + "\\" + "F-J")));
+
+            while(fLine!=null && sLine!= null && fj.contains(fLine.substring(0,1)) && fj.contains((sLine.substring(0,1)))){
+                String fTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                String sTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                if (fTerm.compareTo(sTerm) == 1) {
+                    writeToF.write(sLine);
+                    sLine = readSecond.readLine();
+                } else if (fTerm.compareTo(sTerm) == -1) {
+                    writeToF.write(fLine);
+                    fLine = readFirst.readLine();
+                } else {
+                    sLine = sLine.substring(sLine.indexOf(":") + 1, sLine.length() - 1);
+                    fLine = fLine.concat(sLine);
+                    fLine = fLine.concat("\n");
+                    writeToF.write(fLine);
+                    fLine = readFirst.readLine();
+                    sLine = readSecond.readLine();
+                }
+            }
+            while(sLine!=null && fj.contains((sLine.substring(0,1)))){
+                writeToF.write(sLine);
+                sLine = readSecond.readLine();
+            }
+            while(fLine!=null && fj.contains((fLine.substring(0,1)))){
+                writeToF.write(fLine);
+                fLine = readSecond.readLine();
+            }
+
+            writeToF.close();  //todo not sure
+            BufferedWriter writeToK = new BufferedWriter(new FileWriter(new File(filesPath + "\\" + "K-O")));
+
+            while(fLine!=null && sLine!= null && ko.contains(fLine.substring(0,1)) && ko.contains((sLine.substring(0,1)))){
+                String fTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                String sTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                if (fTerm.compareTo(sTerm) == 1) {
+                    writeToK.write(sLine);
+                    sLine = readSecond.readLine();
+                } else if (fTerm.compareTo(sTerm) == -1) {
+                    writeToK.write(fLine);
+                    fLine = readFirst.readLine();
+                } else {
+                    sLine = sLine.substring(sLine.indexOf(":") + 1, sLine.length() - 1);
+                    fLine = fLine.concat(sLine);
+                    fLine = fLine.concat("\n");
+                    writeToK.write(fLine);
+                    fLine = readFirst.readLine();
+                    sLine = readSecond.readLine();
+                }
+            }
+            while(sLine!=null && ko.contains((sLine.substring(0,1)))){
+                writeToK.write(sLine);
+                sLine = readSecond.readLine();
+            }
+            while(fLine!=null && ko.contains((fLine.substring(0,1)))){
+                writeToK.write(fLine);
+                fLine = readSecond.readLine();
+            }
+
+            writeToK.close();  //todo not sure
+            BufferedWriter writeToP = new BufferedWriter(new FileWriter(new File(filesPath + "\\" + "P-T")));
+
+            while(fLine!=null && sLine!= null && pt.contains(fLine.substring(0,1)) && pt.contains((sLine.substring(0,1)))){
+                String fTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                String sTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                if (fTerm.compareTo(sTerm) == 1) {
+                    writeToP.write(sLine);
+                    sLine = readSecond.readLine();
+                } else if (fTerm.compareTo(sTerm) == -1) {
+                    writeToP.write(fLine);
+                    fLine = readFirst.readLine();
+                } else {
+                    sLine = sLine.substring(sLine.indexOf(":") + 1, sLine.length() - 1);
+                    fLine = fLine.concat(sLine);
+                    fLine = fLine.concat("\n");
+                    writeToP.write(fLine);
+                    fLine = readFirst.readLine();
+                    sLine = readSecond.readLine();
+                }
+            }
+            while(sLine!=null && pt.contains((sLine.substring(0,1)))){
+                writeToP.write(sLine);
+                sLine = readSecond.readLine();
+            }
+            while(fLine!=null && pt.contains((fLine.substring(0,1)))){
+                writeToP.write(fLine);
+                fLine = readSecond.readLine();
+            }
+
+            writeToP.close();  //todo not sure
+            BufferedWriter writeToU = new BufferedWriter(new FileWriter(new File(filesPath + "\\" + "U-Z")));
+
+            while(fLine!=null && sLine!= null && uz.contains(fLine.substring(0,1)) && uz.contains((sLine.substring(0,1)))){
+                String fTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                String sTerm = fLine.substring(0, fLine.indexOf(":", 0));
+                if (fTerm.compareTo(sTerm) == 1) {
+                    writeToU.write(sLine);
+                    sLine = readSecond.readLine();
+                } else if (fTerm.compareTo(sTerm) == -1) {
+                    writeToU.write(fLine);
+                    fLine = readFirst.readLine();
+                } else {
+                    sLine = sLine.substring(sLine.indexOf(":") + 1, sLine.length() - 1);
+                    fLine = fLine.concat(sLine);
+                    fLine = fLine.concat("\n");
+                    writeToU.write(fLine);
+                    fLine = readFirst.readLine();
+                    sLine = readSecond.readLine();
+                }
+            }
+            while(sLine!=null && uz.contains((sLine.substring(0,1)))){
+                writeToU.write(sLine);
+                sLine = readSecond.readLine();
+            }
+            while(fLine!=null && uz.contains((fLine.substring(0,1)))){
+                writeToU.write(fLine);
+                fLine = readSecond.readLine();
+            }
+
+            readFirst.close();
+            readSecond.close();
+            writeToFile.close();
+            //todo delete the last two files
+
+
+
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
